@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Carta do Pantanal — Grupo de Acao Interno</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getDatabase,ref,set,get}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const FC={apiKey:"AIzaSyBzL_Pic_2JETKOqs4tD9EC2TRynEFaZG4",authDomain:"som-ambiental.firebaseapp.com",databaseURL:"https://som-ambiental-default-rtdb.firebaseio.com",projectId:"som-ambiental",storageBucket:"som-ambiental.firebasestorage.app",messagingSenderId:"1008024969251",appId:"1:1008024969251:web:c40b04fbe48dd578a05196"};
+const db=getDatabase(initializeApp(FC));
+const BASE="carta_pantanal_v2";
+let USER=null,ST={eixos:[],actions:{},comments:{},ticks:{},log:[]};
+
+const COLORS={e1:"#c0392b",e2:"#0d5c8f",e3:"#1a6b2e",e4:"#d4890a",e5:"#6c3483"};
+const USERS=[{id:"ES",name:"Ernandes Sobreira",bg:"#1a6b2e"},{id:"CN",name:"Cintya Nascimento",bg:"#0d5c8f"},{id:"DT",name:"Danielle Tavares",bg:"#6c3483"}];
+const GRUPOS=["Povos Tradicionais e Indigenas","Comunidade Cientifica","Juventude Pantaneira","Educadores","Gestores Publicos","Mulheres Pantaneiras","Setor Produtivo","Sociedade Civil Organizada","Todos os grupos"];
+const STATUS_OPTS=["Proposta","Em andamento","Concluida","Pausada","Cancelada"];
+
+const IE=[
+{id:"e1",titulo:"Eixo 1 — Diagnostico",sub:"Forcas e fragilidades estruturais",cor:"#c0392b",descricao:"A Carta identifica as forcas do bioma — biodiversidade, sabedoria dos povos, solidariedade comunitaria e ciencia comprometida — e seis fragilidades estruturais que exigem respostas urgentes e coletivas.",demandas:[
+{id:"d1_1",n:"1.1",texto:"Ausencia de politicas publicas integradas e de longo prazo para gestao do territorio pantaneiro"},
+{id:"d1_2",n:"1.2",texto:"Desmatamento e uso insustentavel do solo comprometendo nascentes e matas ciliares"},
+{id:"d1_3",n:"1.3",texto:"Intensificacao das queimadas e incendios ameacando ecossistemas, fauna e vidas humanas"},
+{id:"d1_4",n:"1.4",texto:"Pressao de grandes empreendimentos e monoculturas criando zonas de risco ambiental nas bordas do bioma"},
+{id:"d1_5",n:"1.5",texto:"Desvalorizacao das comunidades tradicionais e da juventude rural fragilizando o tecido social"},
+{id:"d1_6",n:"1.6",texto:"Educacao ambiental incipiente e desinformacao agravando a desconexao entre sociedade e natureza"}
+]},
+{id:"e2",titulo:"Eixo 2 — Horizontes",sub:"Oportunidades para um novo pacto",cor:"#0d5c8f",descricao:"O Pantanal pode e deve ser referencia global em sustentabilidade, bioeconomia e justica climatica. As oportunidades identificadas dialogam com os ODS e apontam caminhos concretos para um novo modelo de desenvolvimento territorial.",demandas:[
+{id:"d2_1",n:"2.1",texto:"Fortalecer a bioeconomia de base local com cadeias produtivas que respeitem o ciclo das aguas"},
+{id:"d2_2",n:"2.2",texto:"Ampliar politicas de restauracao ecologica e manejo sustentavel do fogo valorizando o saber tradicional"},
+{id:"d2_3",n:"2.3",texto:"Promover educacao ambiental critica e emancipatoria formando cidadaos conscientes e agentes de mudanca"},
+{id:"d2_4",n:"2.4",texto:"Implementar ciencia cidada integrando universidades, escolas e comunidades locais no monitoramento"},
+{id:"d2_5",n:"2.5",texto:"Desenvolver turismo sustentavel e solidario gerando renda e reforco de identidade cultural pantaneira"},
+{id:"d2_6",n:"2.6",texto:"Garantir participacao social efetiva nos Comites de Bacia Hidrografica do Rio Paraguai"},
+{id:"d2_7",n:"2.7",texto:"Inserir o Pantanal nas agendas globais de clima e biodiversidade como simbolo de cooperacao e esperanca"}
+]},
+{id:"e3",titulo:"Eixo 3 — Compromissos",sub:"Ciencia, saberes e acao coletiva",cor:"#1a6b2e",descricao:"A Carta nao e apenas denuncia — e pacto. Os signatarios assumem seis compromissos coletivos que estruturam um caminho de acao concreto, unindo geracoes em torno de um futuro pantaneiro compartilhado.",demandas:[
+{id:"d3_1",n:"3.1",texto:"Valorizar e proteger os povos tradicionais reconhecendo seus direitos territoriais e modos de vida sustentaveis"},
+{id:"d3_2",n:"3.2",texto:"Promover politicas publicas de conservacao com base em dados cientificos e amplo dialogo social"},
+{id:"d3_3",n:"3.3",texto:"Apoiar a transicao ecologica justa substituindo modelos predatorios por economias regenerativas"},
+{id:"d3_4",n:"3.4",texto:"Fortalecer o protagonismo das mulheres pantaneiras, juventudes e educadores ambientais como liderancas"},
+{id:"d3_5",n:"3.5",texto:"Integrar ciencia, educacao e gestao ambiental em um projeto de futuro que una conhecimento e etica"},
+{id:"d3_6",n:"3.6",texto:"Reforcar os Comites de Bacia Hidrografica como espacos legitimos de participacao e planejamento territorial"}
+]},
+{id:"e4",titulo:"Eixo 4 — Demandas a COP 30",sub:"Chamado aos governos e a comunidade internacional",cor:"#d4890a",descricao:"As 11 demandas formais da Carta do Pantanal aos governos nacionais e locais e a comunidade internacional, nacidas da experiencia vivida — nao de abstracoes. Serao cobradas publicamente ate a COP 30 em Belem.",demandas:[
+{id:"d4_1",n:"4.1",texto:"Implementar politicas de mitigacao e adaptacao climatica especificas para o bioma Pantanal com metas e indicadores publicos"},
+{id:"d4_2",n:"4.2",texto:"Criar um Fundo Internacional de Restauracao e Governanca das Aguas do Pantanal com participacao da sociedade civil"},
+{id:"d4_3",n:"4.3",texto:"Garantir protecao e regularizacao fundiaria dos territorios tradicionais e coletivos no Pantanal"},
+{id:"d4_4",n:"4.4",texto:"Incluir o Pantanal nas decisoes estrategicas da COP 30 com representacao direta dos povos locais"},
+{id:"d4_5",n:"4.5",texto:"Fortalecer as instituicoes ambientais com recursos adequados, autonomia tecnica e transparencia"},
+{id:"d4_6",n:"4.6",texto:"Estabelecer parcerias com organizacoes globais comprometidas com impacto positivo real e distribuicao equitativa"},
+{id:"d4_7",n:"4.7",texto:"Promover a educacao ambiental e a cultura pantaneira como pilares da sustentabilidade e identidade territorial"},
+{id:"d4_8",n:"4.8",texto:"Adotar planos permanentes de prevencao e manejo do fogo baseados em ciencia e saberes tradicionais"},
+{id:"d4_9",n:"4.9",texto:"Restaurar as nascentes do Rio Paraguai por ser o eixo hidrologico principal do bioma Pantanal"},
+{id:"d4_10",n:"4.10",texto:"Implantar politica de corredores bioculturais no Pantanal para manter biodiversidade e diversidade cultural"},
+{id:"d4_11",n:"4.11",texto:"Promover o reconhecimento dos direitos da natureza e dos rios em toda a bacia do Rio Paraguai"}
+]},
+{id:"e5",titulo:"Eixo 5 — Chamado a Acao",sub:"O Pantanal e agora",cor:"#6c3483",descricao:"O chamado da Carta a sociedade brasileira e internacional para agir em quatro frentes urgentes e permanentes. Preservar o Pantanal e preservar a agua que nos sustenta, o ar que respiramos e a diversidade que nos alimenta.",demandas:[
+{id:"d5_1",n:"5.1",texto:"A ciencia precisa ser escutada — dados e evidencias devem guiar as politicas publicas ambientais"},
+{id:"d5_2",n:"5.2",texto:"A educacao ambiental social empreendedora e inovadora precisa ser prioridade estrutural de Estado"},
+{id:"d5_3",n:"5.3",texto:"A voz dos povos tradicionais precisa ser respeitada em todas as decisoes que os afetam diretamente"},
+{id:"d5_4",n:"5.4",texto:"A terra, a agua e o fogo precisam ser manejados com sabedoria, equilibrio e responsabilidade geracional"}
+]}
+];
+
+async function fbLoad(){
+  try{
+    const s=await get(ref(db,BASE));
+    if(s.exists()){const d=s.val();ST.eixos=d.eixos||JSON.parse(JSON.stringify(IE));ST.actions=d.actions||{};ST.comments=d.comments||{};ST.ticks=d.ticks||{};ST.log=d.log||[];}
+    else{ST.eixos=JSON.parse(JSON.stringify(IE));await fbSave();}
+    pill("Firebase conectado","ok");
+  }catch(e){ST.eixos=JSON.parse(JSON.stringify(IE));pill("Modo local","warn");}
+}
+async function fbSave(){
+  try{await set(ref(db,BASE),ST);pill("Salvo "+new Date().toLocaleTimeString('pt-BR'),"ok");}
+  catch(e){pill("Erro ao salvar","err");}
+}
+function addLog(a,d){ST.log.unshift({ts:new Date().toISOString(),user:USER,acao:a,detalhe:d});if(ST.log.length>400)ST.log=ST.log.slice(0,400);}
+function pill(m,t){const e=document.getElementById('pill');if(e){e.textContent=m;e.className='pill '+t;}}
+function toast(m,t='ok'){const e=document.getElementById('toast');e.textContent=m;e.className='toast show'+(t!=='ok'?' '+t:'');setTimeout(()=>e.className='toast',2800);}
+function fmt(iso){if(!iso)return'';return new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
+function initAction(did){if(!ST.actions[did])ST.actions[did]={acao:'',data:'',responsavel:'',grupo:'',status:'Proposta',notas:''};}
+
+function render(){
+  const r=document.getElementById('app');
+  if(!USER){renderLogin(r);return;}
+  const v=window._V||'carta';
+  if(v==='carta')renderCarta(r);
+  else if(v==='carta-texto')renderTexto(r);
+  else if(v==='hist')renderHist(r);
+  else renderLog(r);
+}
+
+function renderLogin(r){
+  r.innerHTML=`<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-leaf">&#127807;</div>
+    <h1 class="login-h1">Carta do Pantanal</h1>
+    <p class="login-sub">Ferramenta interna do Grupo de Acao — 2025 a 2030</p>
+    <div class="login-divider"></div>
+    <p class="login-label">Selecione seu perfil</p>
+    <div class="login-users">
+      ${USERS.map(u=>`<button class="login-btn" onclick="window.doLogin('${u.name}')">
+        <span class="login-av" style="background:${u.bg}">${u.id}</span>
+        <span>${u.name}</span>
+      </button>`).join('')}
+    </div>
+  </div>
+  <div class="login-bg-text">Enquanto houver Pantanal, havera futuro</div>
+</div>`;
+}
+
+function nav(cur){
+  const av=USER.split(' ').map(x=>x[0]).join('').slice(0,2);
+  const uc=USERS.find(u=>u.name===USER);
+  const bg=uc?uc.bg:'#1a6b2e';
+  return`<header class="hdr">
+  <div class="hdr-l">
+    <span class="hdr-leaf">&#127807;</span>
+    <div><div class="hdr-title">Carta do Pantanal</div><div class="hdr-sub">Grupo de Acao — 2025 a 2030</div></div>
+  </div>
+  <div class="hdr-r">
+    <div class="hdr-user"><span class="hdr-av" style="background:${bg}">${av}</span><span>${USER.split(' ')[0]}</span></div>
+    <span id="pill" class="pill ok">Firebase...</span>
+    <button class="btn-logout" onclick="window.doLogout()">Sair</button>
+  </div>
+</header>
+<nav class="nav">
+  <a class="nav-a ${cur==='carta'?'on':''}" href="#" onclick="setV('carta')">&#128196; Eixos e Demandas</a>
+  <a class="nav-a ${cur==='carta-texto'?'on':''}" href="#" onclick="setV('carta-texto')">&#128214; A Carta Completa</a>
+  <a class="nav-a ${cur==='hist'?'on':''}" href="#" onclick="setV('hist')">&#128197; Nov/2025</a>
+  <a class="nav-a ${cur==='log'?'on':''}" href="#" onclick="setV('log')">&#128221; Registro</a>
+  <div class="nav-r">
+    <button class="nav-btn-save" onclick="window.salvar()">&#128190; Salvar</button>
+    <button class="nav-btn-exp" onclick="window.expTXT()">&#11123; TXT</button>
+    <button class="nav-btn-exp" onclick="window.expJSON()">&#11123; JSON</button>
+  </div>
+</nav>`;
+}
+
+function renderCarta(r){
+  const total=ST.eixos.reduce((a,e)=>a+e.demandas.length,0);
+  const done=ST.eixos.reduce((a,e)=>a+e.demandas.filter(d=>ST.ticks[d.id]).length,0);
+  const pct=total>0?Math.round(done/total*100):0;
+  const activos=Object.keys(ST.actions).filter(k=>ST.actions[k]&&ST.actions[k].acao).length;
+  r.innerHTML=nav('carta')+`<div class="main">
+
+  <div class="hero-strip">
+    <div class="hero-strip-l">
+      <div class="hero-strip-title">Grupo de Acao da Carta do Pantanal</div>
+      <div class="hero-strip-sub">Analise coletiva, propostas e monitoramento das demandas — de 2025 ate a COP 30</div>
+    </div>
+    <div class="hero-kpis">
+      <div class="kpi"><span class="kpi-n">${pct}%</span><span class="kpi-l">Trabalhados</span></div>
+      <div class="kpi"><span class="kpi-n">${done}/${total}</span><span class="kpi-l">Itens</span></div>
+      <div class="kpi"><span class="kpi-n">${activos}</span><span class="kpi-l">Com acao</span></div>
+      <div class="kpi"><span class="kpi-n">${Object.values(ST.comments).reduce((a,c)=>a+c.length,0)}</span><span class="kpi-l">Manifestacoes</span></div>
+    </div>
+  </div>
+
+  <div class="prog-bar-row">
+    <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
+  </div>
+
+  ${ST.eixos.map(e=>renderEixo(e)).join('')}
+  <div class="add-eixo-wrap"><button class="btn-add-eixo" onclick="window.addEixo()">+ Adicionar novo eixo a Carta</button></div>
+  </div>`;
+  pill("Firebase ativo","ok");
+}
+
+function renderEixo(e){
+  const done=e.demandas.filter(d=>ST.ticks[d.id]).length;
+  const tot=e.demandas.length;
+  const pct=tot>0?Math.round(done/tot*100):0;
+  const ncoms=e.demandas.reduce((a,d)=>a+(ST.comments[d.id]?ST.comments[d.id].length:0),0);
+  const nact=e.demandas.filter(d=>ST.actions[d.id]&&ST.actions[d.id].acao).length;
+  return`<div class="eixo" id="eixo_${e.id}">
+  <div class="eixo-hd" onclick="togE('${e.id}')" style="--ec:${e.cor}">
+    <div class="eixo-hd-l">
+      <span class="eixo-dot" style="background:${e.cor}"></span>
+      <div>
+        <div class="eixo-tit">${e.titulo}</div>
+        <div class="eixo-sub">${e.sub}</div>
+      </div>
+    </div>
+    <div class="eixo-hd-r">
+      ${nact>0?`<span class="tag-act">&#128161; ${nact} acoes</span>`:''}
+      ${ncoms>0?`<span class="tag-com">&#128172; ${ncoms}</span>`:''}
+      <div class="mini-prog" title="${pct}%">
+        <div class="mini-prog-fill" style="width:${pct}%;background:${e.cor}"></div>
+      </div>
+      <span class="eixo-pct" style="color:${e.cor}">${pct}%</span>
+      <span class="eixo-cnt">${done}/${tot}</span>
+      <span class="tog-icon" id="ti_${e.id}">&#9660;</span>
+    </div>
+  </div>
+  <div class="eixo-body" id="eb_${e.id}" style="display:none">
+    <div class="eixo-desc-strip" style="border-left:4px solid ${e.cor}">${e.descricao}</div>
+    ${e.demandas.map(d=>renderD(d,e.cor)).join('')}
+    <div class="add-d-row">
+      <input id="nd_${e.id}" class="nd-inp" placeholder="Adicionar nova demanda ou proposta...">
+      <button class="btn-add-d" style="background:${e.cor}" onclick="window.addD('${e.id}')">+ Adicionar</button>
+    </div>
+    <div class="eixo-foot">
+      <button class="btn-eiedit" onclick="window.editE('${e.id}')">&#9998; Editar eixo</button>
+      <button class="btn-eidel" onclick="window.delE('${e.id}')">&#128465; Remover eixo</button>
+    </div>
+  </div>
+</div>`;
+}
+
+function renderD(d,cor){
+  const ck=!!ST.ticks[d.id];
+  const coms=ST.comments[d.id]||[];
+  const act=ST.actions[d.id]||{};
+  const expC=window._expC&&window._expC[d.id];
+  const expA=window._expA&&window._expA[d.id];
+  const hasAct=!!act.acao;
+  const stColor={"Proposta":"#888","Em andamento":"#0d5c8f","Concluida":"#1a6b2e","Pausada":"#d4890a","Cancelada":"#c0392b"};
+  return`<div class="dem ${ck?'dem-done-wrap':''}" id="dem_${d.id}">
+  <div class="dem-main">
+    <label class="dem-chk-l"><input type="checkbox" ${ck?'checked':''} onchange="window.togTick('${d.id}')"><span class="dem-ck" style="${ck?'background:'+cor+';border-color:'+cor:''}">&#10003;</span></label>
+    <div class="dem-n" style="color:${cor}">${d.n||''}</div>
+    <div class="dem-txt ${ck?'dem-txt-done':''}">${d.texto}</div>
+    <div class="dem-actions">
+      <button class="da-btn ${hasAct?'da-on':''}" onclick="window.togA('${d.id}')" title="Plano de acao">&#128161; ${hasAct?'<span style=color:#1a6b2e;font-size:.65rem>'+act.status+'</span>':'Acao'}</button>
+      <button class="da-btn ${coms.length>0?'da-on':''}" onclick="window.togC('${d.id}')" title="Manifestacoes">&#128172; ${coms.length>0?coms.length:''}</button>
+      <button class="da-btn" onclick="window.editD('${d.id}')" title="Editar">&#9998;</button>
+      <button class="da-btn da-del" onclick="window.delD('${d.id}')" title="Remover">&#215;</button>
+    </div>
+  </div>
+  ${expA?renderAction(d.id,cor):''}
+  ${expC?renderComs(d.id,cor):''}
+</div>`;
+}
+
+function renderAction(did,cor){
+  const a=ST.actions[did]||{};
+  const sc={"Proposta":"#8898b0","Em andamento":"#0d5c8f","Concluida":"#1a6b2e","Pausada":"#d4890a","Cancelada":"#c0392b"};
+  return`<div class="action-panel">
+  <div class="ap-title" style="color:${cor}">&#128161; Plano de Acao para esta Demanda</div>
+  <div class="ap-grid">
+    <div class="ap-field ap-wide">
+      <label>O que sera feito</label>
+      <textarea id="ap_acao_${did}" class="ap-ta" rows="2" placeholder="Descreva a acao concreta proposta pelo grupo...">${a.acao||''}</textarea>
+    </div>
+    <div class="ap-field">
+      <label>Status</label>
+      <select id="ap_status_${did}" class="ap-sel">
+        ${STATUS_OPTS.map(s=>`<option value="${s}" ${a.status===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div class="ap-field">
+      <label>Data prevista</label>
+      <input type="date" id="ap_data_${did}" class="ap-inp" value="${a.data||''}">
+    </div>
+    <div class="ap-field">
+      <label>Responsavel</label>
+      <select id="ap_resp_${did}" class="ap-sel">
+        <option value="">Selecionar...</option>
+        ${USERS.map(u=>`<option value="${u.name}" ${a.responsavel===u.name?'selected':''}>${u.name}</option>`).join('')}
+        <option value="Grupo completo" ${a.responsavel==='Grupo completo'?'selected':''}>Grupo completo</option>
+        <option value="A definir" ${a.responsavel==='A definir'?'selected':''}>A definir</option>
+      </select>
+    </div>
+    <div class="ap-field">
+      <label>Grupo-alvo</label>
+      <select id="ap_grupo_${did}" class="ap-sel">
+        <option value="">Selecionar...</option>
+        ${GRUPOS.map(g=>`<option value="${g}" ${a.grupo===g?'selected':''}>${g}</option>`).join('')}
+      </select>
+    </div>
+    <div class="ap-field ap-wide">
+      <label>Notas e observacoes adicionais</label>
+      <textarea id="ap_notas_${did}" class="ap-ta" rows="2" placeholder="Informacoes complementares, parceiros, recursos necessarios...">${a.notas||''}</textarea>
+    </div>
+  </div>
+  <div class="ap-btns">
+    <button class="ap-save" style="background:${cor}" onclick="window.saveAction('${did}')">&#128190; Salvar plano</button>
+    <button class="ap-clear" onclick="window.clearAction('${did}')">Limpar</button>
+  </div>
+</div>`;
+}
+
+function renderComs(did,cor){
+  const coms=ST.comments[did]||[];
+  return`<div class="coms-panel">
+  <div class="coms-title">&#128172; Manifestacoes e Observacoes do Grupo</div>
+  ${coms.length===0?'<p class="coms-empty">Nenhuma manifestacao ainda. Compartilhe sua perspectiva!</p>':''}
+  ${coms.map((c,i)=>`<div class="com-item">
+    <div class="com-meta">
+      <span class="com-user">${c.user}</span>
+      <span class="com-ts">${fmt(c.ts)}</span>
+      ${c.user===USER?`<button class="com-del" onclick="window.delCom('${did}',${i})">&#215;</button>`:''}
+    </div>
+    <div class="com-txt">${c.texto}</div>
+  </div>`).join('')}
+  <div class="com-inp-row">
+    <textarea id="ci_${did}" class="com-ta" rows="2" placeholder="Sua manifestacao, analise ou proposta sobre esta demanda..."></textarea>
+    <button class="com-send" style="background:${cor}" onclick="window.addCom('${did}')">Enviar</button>
+  </div>
+</div>`;
+}
+
+function renderTexto(r){
+  r.innerHTML=nav('carta-texto')+`<div class="main">
+  <div class="carta-wrap">
+    <div class="carta-header">
+      <div class="carta-leaf">&#127807;</div>
+      <h1 class="carta-h1">Carta do Pantanal<br><span>a COP 30</span></h1>
+      <p class="carta-tagline">Manifesto pela Vida, pela Agua, Justica Climatica e pela Regeneracao da Terra</p>
+      <div class="carta-meta">Construida coletivamente na COP 2025 Pantanal &nbsp;·&nbsp; Caceres, 10 a 12 de novembro de 2025 &nbsp;·&nbsp; 500+ vozes</div>
+    </div>
+
+    <div class="carta-quote">
+      "O Pantanal, coracao umido da America do Sul, fala — nossas aguas gritam por esperanca."
+    </div>
+
+    <div class="carta-section">
+      <h2>Preambulo</h2>
+      <p>O Pantanal, coracao umido da America do Sul, fala. Esta Carta nasce do encontro de mais de 500 vozes diversas, entre comunidades tradicionais, povos indigenas, quilombolas, ribeirinhos, pesquisadores, gestores publicos, educadores, empresas privadas e movimentos sociais, que se unem para defender a vida, a agua e a dignidade de quem habita esse territorio.</p>
+      <p>Inspirados pela Agenda 2030 e pelos Objetivos do Desenvolvimento Sustentavel, afirmamos que a crise climatica e tambem uma crise etica, social e ecologica. No Pantanal, a irregularidade das cheias, as queimadas cada vez mais severas, o desmatamento e o avanco desordenado da agropecuaria revelam a ruptura de um equilibrio milenar entre ser humano e natureza. A degradacao dos ecossistemas vem acompanhada da fragilizacao das politicas publicas, da perda de saberes tradicionais e da desigualdade no acesso a terra e a agua.</p>
+      <p>Mas queremos que a nossa voz ecoe tambem como um chamado a regeneracao da terra e da economia. O futuro do Pantanal e de todo o Mato Grosso, mas depende da coragem de impulsionar novos negocios e a nova economia que nascem dos residuos da natureza, transformando o que antes era descarte em fonte de renda, dignidade e inovacao.</p>
+    </div>
+
+    <div class="carta-section">
+      <h2>1. Diagnostico — Forcas e Fragilidades</h2>
+      <p>Suas forcas estao no vigor da biodiversidade, na sabedoria dos povos que aprenderam a viver com o pulso das aguas, na solidariedade comunitaria e na beleza de uma paisagem que inspira o mundo. Ha forca tambem na ciencia que se aproxima da experiencia local, na cultura pantaneira que celebra a terra, o rio, o fogo e o tempo.</p>
+      <p>Mas as fragilidades sao profundas e exigem respostas estruturais: a ausencia de politicas publicas integradas e de longo prazo mina a capacidade de gestao do territorio; o desmatamento e o uso insustentavel do solo comprometem nascentes e margens; a intensificacao das queimadas e incendios ameaca ecossistemas e vidas humanas; a pressao de grandes empreendimentos e monoculturas transforma paisagens em zonas de risco ambiental; a desvalorizacao das comunidades tradicionais e da juventude rural fragiliza o tecido social e o futuro da conservacao; a educacao ambiental ainda e incipiente, e a desinformacao agrava a desconexao entre sociedade e natureza.</p>
+    </div>
+
+    <div class="carta-section">
+      <h2>2. Horizontes — Oportunidades para um novo pacto</h2>
+      <p>O Pantanal pode e deve ser referencia global em sustentabilidade, bioeconomia e justica climatica. As oportunidades identificadas apontam para: fortalecimento da bioeconomia de base local, com cadeias produtivas que respeitem o ciclo das aguas e promovam renda sem destruir; ampliacao das politicas de restauracao ecologica e manejo sustentavel do fogo, valorizando o conhecimento tradicional; educacao ambiental critica e emancipatoria, que forme cidadaos conscientes e agentes de mudanca; ciencia cidada e integracao entre universidades, escolas e comunidades, para monitorar e compreender as transformacoes ambientais; turismo sustentavel e solidario, que gere economia e reforce o pertencimento cultural; participacao social efetiva nos Comites de Bacia Hidrografica, garantindo a gestao democratica das aguas; insercao do Pantanal nas agendas globais de clima e biodiversidade, como simbolo de cooperacao internacional pela vida.</p>
+    </div>
+
+    <div class="carta-section">
+      <h2>3. Compromissos — Ciencia, Saberes e Acao</h2>
+      <p>Comprometemo-nos, coletivamente, a: valorizar e proteger os povos tradicionais, reconhecendo seus direitos territoriais e seus modos de vida como expressoes de sustentabilidade; promover politicas publicas integradas de conservacao e desenvolvimento, com base em dados cientificos e dialogo social; apoiar a transicao ecologica e justa, substituindo modelos predatorios por economias regenerativas; fortalecer o protagonismo das mulheres pantaneiras, juventudes, educadores ambientais e Comites de Bacia Hidrografica como liderancas da transformacao; integrar ciencia, educacao e gestao ambiental em um projeto de futuro que una conhecimento e etica; reforcar o papel dos Comites de Bacia Hidrografica como espacos legitimos de participacao e planejamento territorial.</p>
+    </div>
+
+    <div class="carta-section">
+      <h2>4. Demandas a COP 30</h2>
+      <p>A luz da urgencia climatica e da Agenda 2030, demandamos:</p>
+      <ol class="carta-lista">
+        <li>A implementacao de politicas de mitigacao e adaptacao climatica especificas para o bioma Pantanal, com metas e indicadores publicos;</li>
+        <li>A criacao de um Fundo Internacional de Restauracao e Governanca das Aguas do Pantanal, com participacao da sociedade civil e das comunidades locais;</li>
+        <li>A protecao e regularizacao fundiaria dos territorios tradicionais e coletivos;</li>
+        <li>A inclusao do Pantanal nas decisoes estrategicas da COP 30, com representacao dos povos locais;</li>
+        <li>O fortalecimento das instituicoes ambientais, com recursos, autonomia tecnica e mecanismos de transparencia;</li>
+        <li>O fortalecimento e estabelecimento com organizacoes Globais que visam impulsionar o Impacto Positivo Real;</li>
+        <li>A promocao da educacao ambiental e da cultura pantaneira como pilares da sustentabilidade;</li>
+        <li>A adocao de planos permanentes de prevencao e manejo do fogo, baseados na ciencia e nos saberes tradicionais;</li>
+        <li>Restauracao das nascentes do Rio Paraguai, por este ser o eixo principal do Pantanal;</li>
+        <li>Implantar a politica de corredores bioculturais no Pantanal, como forma de manter viva a biodiversidade e diversidade cultural;</li>
+        <li>Promover o reconhecimento dos direitos da natureza e dos rios em toda a bacia do Rio Paraguai.</li>
+      </ol>
+    </div>
+
+    <div class="carta-section">
+      <h2>5. Chamado a Acao — O Pantanal e agora</h2>
+      <p>Preservar o Pantanal e preservar a agua que nos sustenta, o ar que respiramos e a diversidade que nos alimenta. Convocamos a COP 30, e todos os espacos de decisao climatica, a reconhecer o Pantanal como zona estrategica de resiliencia global, e a garantir acoes concretas, mensuraveis e justas em sua defesa.</p>
+      <p>Chamamos a sociedade brasileira e internacional a agir. O Pantanal e um espelho do planeta: o que se perde aqui ecoa em todo o mundo. O Pantanal nao e apenas um bioma, e uma licao viva de coexistencia, um patrimonio cultural material e imaterial, onde a ancestralidade de seus povos reverba o espirito da floresta, um simbolo de esperanca em tempos de crise.</p>
+    </div>
+
+    <div class="carta-assinatura">
+      <h2>Enquanto houver Pantanal, havera futuro!</h2>
+      <p>Enquanto houver quem acredite no poder da vida, havera Pantanal, enquanto houver Pantanal, havera humanidade.</p>
+    </div>
+  </div>
+  </div>`;
+}
+
+function renderHist(r){
+  r.innerHTML=nav('hist')+`<div class="main">
+  <div class="hero-strip">
+    <div class="hero-strip-l">
+      <div class="hero-strip-title">COP 2025 Pantanal — Caceres, MT</div>
+      <div class="hero-strip-sub">10 a 12 de novembro de 2025 — Os eventos que geraram a Carta</div>
+    </div>
+  </div>
+  <div class="hist-grid">
+    <div class="hist-card" style="--hc:#d4890a">
+      <div class="hc-date">10–12 Nov 2025</div>
+      <div class="hc-icon">&#128293;</div>
+      <h3>COP 2025 Pantanal</h3>
+      <p>Conferencia das Partes do Pantanal realizada em Caceres-MT. Mais de 500 participantes — comunidades tradicionais, indigenas, pesquisadores, gestores, educadores e movimentos sociais — construiram coletivamente a Carta do Pantanal a COP 30.</p>
+      <ul><li>Carta em 5 eixos construida coletivamente</li><li>11 demandas formais elaboradas e votadas</li><li>6 compromissos coletivos publicamente assumidos</li><li>500+ vozes diversas reunidas em Caceres</li></ul>
+    </div>
+    <div class="hist-card" style="--hc:#1a6b2e">
+      <div class="hc-date">8–9 Nov 2025</div>
+      <div class="hc-icon">&#127891;</div>
+      <h3>1o Hacka do Clima</h3>
+      <p>Primeiro hackathon climatico do Pantanal. Jovens sem experiencia previa em empreendedorismo criaram solucoes reais em 48 horas para desafios socioambientais do bioma. Um laboratorio vivo de inovacao territorial.</p>
+      <ul><li>~40 participantes jovens</li><li>7 equipes de inovacao formadas</li><li>Sensores ecologicos de mercurio</li><li>Paletes de fibra de bananeira</li><li>Tecidos regenerados de residuos naturais</li><li>Barreiras ecologicas e jogos educativos</li></ul>
+    </div>
+    <div class="hist-card" style="--hc:#0d5c8f">
+      <div class="hc-date">10 Nov 2025</div>
+      <div class="hc-icon">&#128100;</div>
+      <h3>COP Mirim</h3>
+      <p>Evento paralelo da COP 2025 Pantanal dedicado as criancas e adolescentes da regiao. A geracao mais jovem teve voz propria, com demandas e propostas para o futuro do bioma que eles vao herdar.</p>
+      <ul><li>Estudantes do ensino fundamental e medio</li><li>Carta das criancas pantaneiras produzida</li><li>Debates sobre o futuro do Pantanal</li><li>Integracdo com a Carta principal</li></ul>
+    </div>
+    <div class="hist-card" style="--hc:#6c3483">
+      <div class="hc-date">11 Nov 2025</div>
+      <div class="hc-icon">&#128300;</div>
+      <h3>Sessao Cientifica</h3>
+      <p>Apresentacoes de pesquisadores da UNEMAT, UFMT e parceiros com dados recentes sobre o estado do bioma. Ciencia comprometida com o bem comum e com a defesa do Pantanal.</p>
+      <ul><li>Fluxos de CO2 e CH4 no Pantanal</li><li>Qualidade do ar PM2.5 nos municipios</li><li>Analise hidrologica do Rio Paraguai</li><li>Projeto BRASA — efeitos das cinzas</li><li>Ciencia cidada e monitoramento comunitario</li></ul>
+    </div>
+    <div class="hist-card" style="--hc:#c0392b">
+      <div class="hc-date">12 Nov 2025</div>
+      <div class="hc-icon">&#127981;</div>
+      <h3>Mesa de Politicas Publicas</h3>
+      <p>Dialogo entre pesquisadores, gestores e liderancas sobre a traducao das demandas da Carta em politicas concretas. Prefeitos, vereadores e secretarios participaram ativamente.</p>
+      <ul><li>Gestao do fogo nos municipios pantaneiros</li><li>Regularizacao fundiaria de territorios</li><li>Proposta do Fundo de Restauracao das Aguas</li><li>Articulacao com o Comite do Rio Paraguai</li></ul>
+    </div>
+    <div class="hist-card" style="--hc:#1a7a6b">
+      <div class="hc-date">10–12 Nov 2025</div>
+      <div class="hc-icon">&#9792;</div>
+      <h3>Vozes das Mulheres Pantaneiras</h3>
+      <p>Espaco especifico para fortalecer o protagonismo feminino — ribeirinhas, artesas, produtoras rurais, pesquisadoras e liderancas comunitarias na construcao da Carta e dos compromissos coletivos.</p>
+      <ul><li>Roda de conversa sobre economia do cuidado</li><li>Demandas especificas incorporadas a Carta</li><li>Articulacao de rede de liderancas femininas</li></ul>
+    </div>
+  </div>
+  <div class="hist-nota">
+    <strong>Nota:</strong> Estes eventos de novembro de 2025 representam o ponto de partida do compromisso coletivo. A presente ferramenta existe para dar continuidade e cobrabilidade ao trabalho do grupo de acao ate a COP 30, em Belem, em 2025.
+  </div>
+  </div>`;
+}
+
+function renderLog(r){
+  r.innerHTML=nav('log')+`<div class="main">
+  <h2 class="pg-tit">Registro de Acoes do Grupo</h2>
+  <p class="pg-sub">Historico completo de todas as alteracoes, comentarios, ticks e edicoes realizadas pelos membros do grupo, com data, hora e autoria.</p>
+  ${ST.log.length===0?'<div class="empty-box">Nenhuma acao registrada ainda.</div>':
+    ST.log.map(l=>`<div class="log-item">
+      <div class="log-meta"><span class="log-u">${l.user||'?'}</span><span class="log-t">${fmt(l.ts)}</span></div>
+      <div class="log-a">${l.acao}</div>
+      ${l.detalhe?`<div class="log-d">${l.detalhe}</div>`:''}
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+window.doLogin=function(n){USER=n;addLog("Login",n);fbLoad().then(()=>render());};
+window.doLogout=function(){USER=null;window._V='carta';render();};
+window.setV=function(v){event&&event.preventDefault();window._V=v;render();};
+window.salvar=async function(){addLog("Salvamento manual","por "+USER);await fbSave();toast("Salvo no Firebase!");};
+
+window.togE=function(id){
+  const b=document.getElementById('eb_'+id),t=document.getElementById('ti_'+id);
+  if(!b)return;const op=b.style.display!=='none';
+  b.style.display=op?'none':'block';if(t)t.innerHTML=op?'&#9660;':'&#9650;';
+};
+
+window.togTick=async function(did){
+  ST.ticks[did]=!ST.ticks[did];
+  const eixo=ST.eixos.find(e=>e.demandas.find(d=>d.id===did));
+  const dem=eixo&&eixo.demandas.find(d=>d.id===did);
+  addLog(ST.ticks[did]?"Marcada":"Desmarcada",dem?dem.texto.slice(0,80):did);
+  await fbSave();render();
+  if(eixo)reopen(eixo.id,did);
+};
+
+window.togA=function(did){
+  window._expA=window._expA||{};window._expA[did]=!window._expA[did];
+  render();
+  const eixo=ST.eixos.find(e=>e.demandas.find(d=>d.id===did));
+  if(eixo)reopen(eixo.id,did);
+};
+
+window.togC=function(did){
+  window._expC=window._expC||{};window._expC[did]=!window._expC[did];
+  render();
+  const eixo=ST.eixos.find(e=>e.demandas.find(d=>d.id===did));
+  if(eixo)reopen(eixo.id,did);
+};
+
+window.saveAction=async function(did){
+  initAction(did);
+  const f=id=>document.getElementById(id);
+  ST.actions[did]={
+    acao:f('ap_acao_'+did)?f('ap_acao_'+did).value:'',
+    status:f('ap_status_'+did)?f('ap_status_'+did).value:'Proposta',
+    data:f('ap_data_'+did)?f('ap_data_'+did).value:'',
+    responsavel:f('ap_resp_'+did)?f('ap_resp_'+did).value:'',
+    grupo:f('ap_grupo_'+did)?f('ap_grupo_'+did).value:'',
+    notas:f('ap_notas_'+did)?f('ap_notas_'+did).value:''
+  };
+  const eixo=ST.eixos.find(e=>e.demandas.find(d=>d.id===did));
+  const dem=eixo&&eixo.demandas.find(d=>d.id===did);
+  addLog("Plano de acao salvo",(dem?dem.texto.slice(0,60)+' | ':'')+ST.actions[did].acao.slice(0,60));
+  await fbSave();render();
+  if(eixo){window._expA=window._expA||{};window._expA[did]=true;reopen(eixo.id,did);}
+  toast("Plano de acao salvo!");
+};
+
+window.clearAction=async function(did){
+  if(!confirm("Limpar o plano de acao?"))return;
+  ST.actions[did]={acao:'',data:'',responsavel:'',grupo:'',status:'Proposta',notas:''};
+  addLog("Plano limpo",did);await fbSave();render();
+  const eixo=ST.eixos.find(e=>e.demandas.find(d=>d.id===did));
+  if(eixo)reopen(eixo.id,did);
+};
+
+window.addCom=async function(did){
+  const inp=document.getElementById('ci_'+did);
+  if(!inp||!inp.value.trim()){toast("Digite algo","warn");return;}
+  if(!ST.comments[did])ST.comments[did]=[];
+  const c={user:USER,ts:new Date().toISOString(),texto:inp.value.trim()};
+  ST.comments[did].push(c);addLog("Manifestacao",c.texto.slice(0,80));
+  await fbSave();window._expC=window._expC||{};window._expC[did]=true;render();
+  const eixo=ST.eixos.find(e=>e.demandas.find(d=>d.id===did));
+  if(eixo)reopen(eixo.id,did);
+  toast("Manifestacao enviada!");
+};
+
+window.delCom=async function(did,i){
+  if(!confirm("Remover?"))return;
+  ST.comments[did].splice(i,1);addLog("Manifestacao removida","item "+i);
+  await fbSave();window._expC=window._expC||{};window._expC[did]=true;render();
+  const eixo=ST.eixos.find(e=>e.demandas.find(d=>d.id===did));
+  if(eixo)reopen(eixo.id,did);
+};
+
+window.editD=function(did){
+  const eixo=ST.eixos.find(e=>e.demandas.find(d=>d.id===did));if(!eixo)return;
+  const dem=eixo.demandas.find(d=>d.id===did);
+  const nt=prompt("Editar demanda:",dem.texto);
+  if(nt&&nt.trim()){addLog("Demanda editada",nt.slice(0,60));dem.texto=nt.trim();
+    fbSave().then(()=>{render();reopen(eixo.id,did);});toast("Atualizada");}
+};
+
+window.delD=async function(did){
+  if(!confirm("Remover esta demanda?"))return;
+  const eixo=ST.eixos.find(e=>e.demandas.find(d=>d.id===did));if(!eixo)return;
+  const dem=eixo.demandas.find(d=>d.id===did);
+  addLog("Demanda removida",dem.texto.slice(0,60));
+  eixo.demandas=eixo.demandas.filter(d=>d.id!==did);delete ST.ticks[did];delete ST.comments[did];delete ST.actions[did];
+  await fbSave();render();reopen(eixo.id);toast("Removida");
+};
+
+window.addD=async function(eid){
+  const inp=document.getElementById('nd_'+eid);if(!inp||!inp.value.trim()){toast("Digite o texto","warn");return;}
+  const eixo=ST.eixos.find(e=>e.id===eid);if(!eixo)return;
+  const id='cx_'+Date.now();
+  eixo.demandas.push({id,n:'',texto:inp.value.trim()});
+  addLog("Nova demanda",inp.value.trim().slice(0,80));
+  await fbSave();render();reopen(eid);toast("Demanda adicionada!");
+};
+
+window.editE=function(eid){
+  const e=ST.eixos.find(x=>x.id===eid);if(!e)return;
+  const nt=prompt("Titulo:",e.titulo);if(!nt||!nt.trim())return;
+  const nd=prompt("Descricao:",e.descricao);
+  addLog("Eixo editado",e.titulo+" > "+nt);e.titulo=nt.trim();if(nd)e.descricao=nd.trim();
+  fbSave().then(()=>{render();reopen(eid);});toast("Eixo atualizado");
+};
+
+window.delE=async function(eid){
+  if(!confirm("Remover este eixo inteiro?"))return;
+  const e=ST.eixos.find(x=>x.id===eid);if(!e)return;
+  addLog("Eixo removido",e.titulo);ST.eixos=ST.eixos.filter(x=>x.id!==eid);
+  await fbSave();render();toast("Eixo removido");
+};
+
+window.addEixo=async function(){
+  const t=prompt("Titulo do novo eixo:");if(!t||!t.trim())return;
+  const d=prompt("Descricao:")||'';
+  const cores=["#1a6b2e","#0d5c8f","#d4890a","#c0392b","#6c3483","#1a7a6b"];
+  ST.eixos.push({id:'ex_'+Date.now(),cor:cores[ST.eixos.length%cores.length],titulo:t.trim(),sub:'',descricao:d.trim(),demandas:[]});
+  addLog("Eixo criado",t);await fbSave();render();toast("Eixo criado!");
+};
+
+function reopen(eid,did){
+  const b=document.getElementById('eb_'+eid);const t=document.getElementById('ti_'+eid);
+  if(b){b.style.display='block';if(t)t.innerHTML='&#9650;';}
+  if(did){const el=document.getElementById('dem_'+did);if(el)el.scrollIntoView({block:'nearest'});}
+}
+
+window.expJSON=function(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({ts:new Date().toISOString(),user:USER,eixos:ST.eixos,ticks:ST.ticks,actions:ST.actions,comments:ST.comments},null,2)],{type:'application/json'}));
+  a.download='carta-pantanal-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  addLog("Export JSON","por "+USER);toast("JSON exportado!");
+};
+
+window.expTXT=function(){
+  let t="CARTA DO PANTANAL — Grupo de Acao\nExportado em: "+new Date().toLocaleString('pt-BR')+" por "+USER+"\n"+"=".repeat(70)+"\n\n";
+  ST.eixos.forEach(e=>{
+    const done=e.demandas.filter(d=>ST.ticks[d.id]).length;
+    t+=e.titulo+" ["+done+"/"+e.demandas.length+"]\n"+e.descricao+"\n"+"-".repeat(60)+"\n";
+    e.demandas.forEach((d,i)=>{
+      t+=(ST.ticks[d.id]?"[X]":"[ ]")+" "+(d.n||i+1)+". "+d.texto+"\n";
+      const a=ST.actions[d.id];
+      if(a&&a.acao){t+="     ACAO: "+a.acao+"\n";if(a.status)t+="     Status: "+a.status+"\n";if(a.data)t+="     Data: "+a.data+"\n";if(a.responsavel)t+="     Responsavel: "+a.responsavel+"\n";if(a.grupo)t+="     Grupo-alvo: "+a.grupo+"\n";if(a.notas)t+="     Notas: "+a.notas+"\n";}
+      (ST.comments[d.id]||[]).forEach(c=>{t+="     >> "+c.user+" ("+fmt(c.ts)+"): "+c.texto+"\n";});
+    });t+="\n";
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([t],{type:'text/plain;charset=utf-8'}));
+  a.download='carta-pantanal-'+new Date().toISOString().slice(0,10)+'.txt';a.click();
+  addLog("Export TXT","por "+USER);toast("TXT exportado!");
+};
+
+window.addEventListener('DOMContentLoaded',()=>render());
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:#f0f2f4;color:#1a1a1a;min-height:100vh;font-size:14px}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:grid;place-items:center;background:linear-gradient(150deg,#061708 0%,#0d3d18 50%,#08304f 100%);position:relative;overflow:hidden;padding:20px}
+.login-bg-text{position:absolute;bottom:28px;left:0;right:0;text-align:center;font-family:'Fraunces',serif;font-style:italic;font-size:clamp(1rem,2.5vw,1.5rem);color:rgba(255,255,255,.12);pointer-events:none}
+.login-card{background:#fff;border-radius:22px;padding:44px 40px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;max-width:380px;width:100%}
+.login-leaf{font-size:3.2rem;margin-bottom:14px}
+.login-h1{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;margin-bottom:5px}
+.login-sub{font-size:.82rem;color:#777;margin-bottom:22px;line-height:1.5}
+.login-divider{height:1px;background:linear-gradient(90deg,transparent,#e0e0e0,transparent);margin:0 0 22px}
+.login-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:#aaa;margin-bottom:13px}
+.login-users{display:flex;flex-direction:column;gap:10px}
+.login-btn{display:flex;align-items:center;gap:13px;padding:13px 16px;border:2px solid #eee;border-radius:13px;background:#fff;cursor:pointer;font-size:.9rem;font-weight:500;font-family:inherit;color:#1a1a1a;transition:all .18s}
+.login-btn:hover{border-color:#1a6b2e;background:#f0faf5;transform:translateY(-2px);box-shadow:0 4px 16px rgba(26,107,46,.15)}
+.login-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.72rem;font-weight:700;flex-shrink:0}
+
+/* HEADER */
+.hdr{background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 8px rgba(0,0,0,.07)}
+.hdr-l{display:flex;align-items:center;gap:10px}
+.hdr-leaf{font-size:1.7rem}
+.hdr-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700}
+.hdr-sub{font-size:.67rem;color:#999;margin-top:1px}
+.hdr-r{display:flex;align-items:center;gap:9px}
+.hdr-user{display:flex;align-items:center;gap:7px;background:#f3f4f6;border-radius:20px;padding:4px 12px 4px 4px;font-size:.79rem;font-weight:500}
+.hdr-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.62rem;font-weight:700}
+.pill{font-size:.65rem;padding:3px 9px;border-radius:50px;font-weight:600}
+.pill.ok{background:#dcfce7;color:#166534}
+.pill.warn{background:#fef9c3;color:#854d0e}
+.pill.err{background:#fee2e2;color:#991b1b}
+.btn-logout{border:none;background:none;color:#9ca3af;font-size:.76rem;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px}
+.btn-logout:hover{background:#fee2e2;color:#dc2626}
+
+/* NAV */
+.nav{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 20px;display:flex;align-items:center;gap:2px;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-a{padding:11px 14px;font-size:.76rem;font-weight:500;color:#6b7280;text-decoration:none;border-bottom:2.5px solid transparent;white-space:nowrap;transition:all .15s}
+.nav-a.on,.nav-a:hover{color:#1a6b2e;border-bottom-color:#1a6b2e}
+.nav-r{margin-left:auto;display:flex;gap:6px;padding:6px 0}
+.nav-btn-save{background:#1a6b2e;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.nav-btn-save:hover{background:#155a25}
+.nav-btn-exp{background:#fff;color:#555;border:1.5px solid #ddd;border-radius:7px;padding:6px 10px;font-size:.74rem;cursor:pointer;font-family:inherit;transition:all .15s}
+.nav-btn-exp:hover{border-color:#888}
+
+/* MAIN */
+.main{max-width:860px;margin:0 auto;padding:22px 18px 70px}
+.hero-strip{background:linear-gradient(135deg,#1a6b2e,#0d4f22);border-radius:14px;padding:20px 24px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.hero-strip-l{}
+.hero-strip-title{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:4px}
+.hero-strip-sub{font-size:.78rem;color:rgba(255,255,255,.7)}
+.hero-kpis{display:flex;gap:12px;flex-wrap:wrap}
+.kpi{background:rgba(255,255,255,.12);border-radius:10px;padding:10px 16px;text-align:center;min-width:72px}
+.kpi-n{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:#f0c060;display:block;line-height:1}
+.kpi-l{font-size:.62rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;display:block}
+.prog-bar-row{margin-bottom:18px;background:#fff;border-radius:10px;padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.prog-track{height:8px;background:#e5e7eb;border-radius:50px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,#1a6b2e,#3aab6b);border-radius:50px;transition:width .6s ease}
+.add-eixo-wrap{margin-top:10px}
+.btn-add-eixo{width:100%;border:2px dashed #d1d5db;background:#fff;color:#9ca3af;border-radius:12px;padding:12px;font-size:.81rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-add-eixo:hover{border-color:#1a6b2e;color:#1a6b2e;background:#f0faf5}
+
+/* EIXO */
+.eixo{background:#fff;border-radius:13px;margin-bottom:13px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden}
+.eixo-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;border-left:5px solid var(--ec,#ccc);transition:background .15s;gap:10px}
+.eixo-hd:hover{background:#fafafa}
+.eixo-hd-l{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.eixo-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.eixo-tit{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eixo-sub{font-size:.72rem;color:#9ca3af;margin-top:1px}
+.eixo-hd-r{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.tag-act{font-size:.68rem;background:#fef9c3;color:#854d0e;padding:3px 8px;border-radius:50px;font-weight:600}
+.tag-com{font-size:.68rem;background:#dbeafe;color:#1e40af;padding:3px 8px;border-radius:50px}
+.mini-prog{width:44px;height:5px;background:#e5e7eb;border-radius:50px;overflow:hidden}
+.mini-prog-fill{height:100%;border-radius:50px;transition:width .4s}
+.eixo-pct{font-size:.72rem;font-weight:700;min-width:28px;text-align:right}
+.eixo-cnt{font-size:.7rem;background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:50px;font-weight:600}
+.tog-icon{font-size:.78rem;color:#d1d5db;flex-shrink:0}
+.eixo-body{border-top:1px solid #f3f4f6}
+.eixo-desc-strip{font-family:'Fraunces',serif;font-style:italic;font-size:.85rem;line-height:1.7;color:#555;padding:12px 16px 8px;border-left-width:3px;border-left-style:solid;margin:12px 14px 10px;background:#f9fafb;border-radius:0 8px 8px 0}
+.add-d-row{display:flex;gap:7px;margin:10px 14px 8px;padding-top:10px;border-top:1.5px dashed #e5e7eb}
+.nd-inp{flex:1;border:1.5px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:.8rem;font-family:inherit;outline:none;transition:border-color .15s}
+.nd-inp:focus{border-color:#1a6b2e}
+.btn-add-d{border:none;color:#fff;border-radius:8px;padding:7px 12px;font-size:.76rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.eixo-foot{display:flex;gap:7px;padding:8px 14px 14px;border-top:1px solid #f3f4f6}
+.btn-eiedit{border:none;background:#f3f4f6;color:#555;border-radius:7px;padding:5px 10px;font-size:.72rem;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-eiedit:hover{background:#e5e7eb}
+.btn-eidel{border:none;background:#fee2e2;color:#dc2626;border-radius:7px;padding:5px 10px;font-size:.72rem;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-eidel:hover{background:#fecaca}
+
+/* DEMANDA */
+.dem{border:1.5px solid transparent;border-radius:10px;margin:0 14px 8px;transition:all .15s;background:#f9fafb}
+.dem:hover{border-color:#e5e7eb;background:#fff}
+.dem-done-wrap{background:#f0fdf4;border-color:#bbf7d0}
+.dem-main{display:flex;align-items:flex-start;gap:9px;padding:9px 11px}
+.dem-chk-l{display:flex;cursor:pointer;flex-shrink:0;margin-top:2px}
+.dem-chk-l input{display:none}
+.dem-ck{width:17px;height:17px;border:2px solid #d1d5db;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:.65rem;color:transparent;flex-shrink:0}
+.dem-chk-l input:checked+.dem-ck{color:#fff}
+.dem-n{font-size:.68rem;font-weight:700;color:#9ca3af;flex-shrink:0;margin-top:2px;min-width:24px}
+.dem-txt{flex:1;font-size:.83rem;line-height:1.6;color:#374151}
+.dem-txt-done{text-decoration:line-through;color:#9ca3af}
+.dem-actions{display:flex;gap:4px;flex-shrink:0;margin-top:1px}
+.da-btn{border:none;background:#f3f4f6;color:#6b7280;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.72rem;font-family:inherit;transition:all .15s;white-space:nowrap}
+.da-btn:hover{background:#e5e7eb}
+.da-btn.da-on{background:#dbeafe;color:#1e40af}
+.da-del{color:#dc2626;background:#fee2e2}
+.da-del:hover{background:#fecaca}
+
+/* ACTION PANEL */
+.action-panel{background:#fffbeb;border-top:1px solid #fde68a;padding:14px 14px 12px;margin:0}
+.ap-title{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+.ap-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ap-wide{grid-column:1/-1}
+.ap-field{display:flex;flex-direction:column;gap:4px}
+.ap-field label{font-size:.7rem;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.06em}
+.ap-ta{border:1.5px solid #e5e7eb;border-radius:8px;padding:7px 9px;font-size:.8rem;font-family:inherit;resize:vertical;outline:none;transition:border-color .15s;background:#fff}
+.ap-ta:focus{border-color:#1a6b2e}
+.ap-inp{border:1.5px solid #e5e7eb;border-radius:8px;padding:7px 9px;font-size:.8rem;font-family:inherit;outline:none;transition:border-color .15s;background:#fff}
+.ap-inp:focus{border-color:#1a6b2e}
+.ap-sel{border:1.5px solid #e5e7eb;border-radius:8px;padding:7px 9px;font-size:.8rem;font-family:inherit;outline:none;background:#fff;cursor:pointer}
+.ap-btns{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #fde68a}
+.ap-save{border:none;color:#fff;border-radius:8px;padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit}
+.ap-clear{border:1.5px solid #d1d5db;background:#fff;color:#6b7280;border-radius:8px;padding:7px 12px;font-size:.76rem;cursor:pointer;font-family:inherit}
+.ap-clear:hover{background:#f3f4f6}
+
+/* COMMENTS */
+.coms-panel{background:#f0f7ff;border-top:1px solid #bfdbfe;padding:14px 14px 12px}
+.coms-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1e40af;margin-bottom:10px}
+.coms-empty{font-size:.78rem;color:#9ca3af;font-style:italic;margin-bottom:10px}
+.com-item{background:#fff;border-radius:8px;padding:9px 11px;margin-bottom:7px;border:1px solid #dbeafe}
+.com-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.com-user{font-size:.72rem;font-weight:700;color:#1e40af}
+.com-ts{font-size:.67rem;color:#9ca3af}
+.com-del{margin-left:auto;border:none;background:none;color:#dc2626;cursor:pointer;font-size:.82rem;padding:0 4px}
+.com-txt{font-size:.82rem;line-height:1.6;color:#374151}
+.com-inp-row{display:flex;gap:8px;align-items:flex-end;margin-top:8px}
+.com-ta{flex:1;border:1.5px solid #bfdbfe;border-radius:8px;padding:7px 9px;font-size:.8rem;font-family:inherit;resize:vertical;outline:none;transition:border-color .15s;background:#fff}
+.com-ta:focus{border-color:#3b82f6}
+.com-send{border:none;color:#fff;border-radius:8px;padding:7px 12px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+
+/* CARTA TEXTO */
+.carta-wrap{max-width:700px;margin:0 auto;background:#fff;border-radius:16px;padding:48px 52px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.carta-header{text-align:center;margin-bottom:32px;padding-bottom:28px;border-bottom:2px solid #f0faf5}
+.carta-leaf{font-size:3rem;margin-bottom:12px}
+.carta-h1{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:900;line-height:1.1;margin-bottom:10px}
+.carta-h1 span{color:#1a6b2e}
+.carta-tagline{font-family:'Fraunces',serif;font-style:italic;font-size:1rem;color:#666;line-height:1.6;margin-bottom:12px}
+.carta-meta{font-size:.72rem;color:#aaa;letter-spacing:.04em}
+.carta-quote{font-family:'Fraunces',serif;font-style:italic;font-size:1.08rem;line-height:1.8;color:#444;padding:18px 22px;border-left:4px solid #3aab6b;background:#f0faf5;border-radius:0 10px 10px 0;margin-bottom:26px}
+.carta-section{margin-bottom:24px}
+.carta-section h2{font-family:'Playfair Display',serif;font-size:1.1rem;color:#1a6b2e;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e8f5ee}
+.carta-section p{font-size:.9rem;line-height:1.9;color:#374151;margin-bottom:12px}
+.carta-lista{padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.carta-lista li{font-size:.88rem;line-height:1.7;color:#374151}
+.carta-assinatura{background:linear-gradient(135deg,#0a3d1a,#1a6b2e);border-radius:14px;padding:28px;text-align:center;margin-top:28px}
+.carta-assinatura h2{font-family:'Playfair Display',serif;font-size:1.4rem;color:#f0c060;margin-bottom:10px}
+.carta-assinatura p{font-family:'Fraunces',serif;font-style:italic;font-size:.95rem;color:rgba(255,255,255,.8);line-height:1.7}
+
+/* HISTORICO */
+.hist-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.hist-card{background:#fff;border-radius:13px;padding:20px 18px;box-shadow:0 1px 8px rgba(0,0,0,.07);border-top:4px solid var(--hc,#1a6b2e)}
+.hc-date{font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:6px}
+.hc-icon{font-size:1.7rem;margin-bottom:7px}
+.hist-card h3{font-family:'Playfair Display',serif;font-size:.97rem;margin-bottom:7px}
+.hist-card p{font-size:.8rem;line-height:1.65;color:#6b7280;margin-bottom:9px}
+.hist-card ul{list-style:none;display:flex;flex-direction:column;gap:3px}
+.hist-card ul li{font-size:.76rem;color:#6b7280;padding-left:11px;position:relative;line-height:1.45}
+.hist-card ul li::before{content:'·';position:absolute;left:0;color:var(--hc,#1a6b2e);font-weight:700}
+.hist-nota{background:#fef9c3;border-radius:9px;padding:12px 14px;font-size:.8rem;line-height:1.6;color:#555;border-left:4px solid #f0a800}
+.hist-nota strong{color:#854d0e}
+
+/* LOG */
+.pg-tit{font-family:'Playfair Display',serif;font-size:1.35rem;margin-bottom:7px}
+.pg-sub{font-size:.82rem;color:#6b7280;margin-bottom:20px;line-height:1.6}
+.empty-box{background:#f3f4f6;border-radius:10px;padding:20px;text-align:center;color:#9ca3af;font-size:.84rem}
+.log-item{background:#fff;border-radius:9px;padding:11px 13px;margin-bottom:7px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.log-meta{display:flex;gap:8px;align-items:center;margin-bottom:3px}
+.log-u{font-size:.7rem;font-weight:700;color:#1a6b2e}
+.log-t{font-size:.66rem;color:#9ca3af}
+.log-a{font-size:.82rem;font-weight:500;color:#374151}
+.log-d{font-size:.76rem;color:#9ca3af;margin-top:2px;padding-left:8px;border-left:2px solid #e5e7eb;line-height:1.5}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:#111827;color:#fff;padding:9px 16px;border-radius:9px;font-size:.8rem;font-weight:500;opacity:0;transform:translateY(8px);transition:all .25s;z-index:999;pointer-events:none;font-family:inherit}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.warn{background:#854d0e}
+.toast.err{background:#991b1b}
+
+@media(max-width:620px){
+  .hist-grid{grid-template-columns:1fr}
+  .ap-grid{grid-template-columns:1fr}
+  .ap-wide{grid-column:1}
+  .carta-wrap{padding:28px 20px}
+  .hdr-sub,.pill{display:none}
+  .main{padding:14px 10px 60px}
+  .hero-kpis{gap:8px}
+  .kpi{padding:8px 12px;min-width:60px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+</body>
+</html>
