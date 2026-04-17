@@ -3,493 +3,540 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>COP Pantanal II — Formalização Jurídica</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<title>COP Pantanal II — Instrumento Jurídico</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700&display=swap" rel="stylesheet">
+<!-- Firebase compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
 <script>
-const FC={apiKey:"AIzaSyBzL_Pic_2JETKOqs4tD9EC2TRynEFaZG4",authDomain:"som-ambiental.firebaseapp.com",databaseURL:"https://som-ambiental-default-rtdb.firebaseio.com",projectId:"som-ambiental",storageBucket:"som-ambiental.firebasestorage.app",messagingSenderId:"1008024969251",appId:"1:1008024969251:web:c40b04fbe48dd578a05196"};
+// ── FIREBASE ───────────────────────────────────────────────────────────────
+const FC = {
+  apiKey:"AIzaSyBzL_Pic_2JETKOqs4tD9EC2TRynEFaZG4",
+  authDomain:"som-ambiental.firebaseapp.com",
+  databaseURL:"https://som-ambiental-default-rtdb.firebaseio.com",
+  projectId:"som-ambiental",
+  storageBucket:"som-ambiental.firebasestorage.app",
+  messagingSenderId:"1008024969251",
+  appId:"1:1008024969251:web:c40b04fbe48dd578a05196"
+};
 firebase.initializeApp(FC);
-const db=firebase.database();
-const BASE="cop_pantanal_II";
+const auth = firebase.auth();
+const db   = firebase.database();
+const BASE = "cop_pantanal_II";
+const provider = new firebase.auth.GoogleAuthProvider();
+
+// ── ADMINS (emails Google) ─────────────────────────────────────────────────
+const ADMINS = [
+  "ernandes.sobreira@unemat.br",
+  "ernandes@japuira.com.br",
+  "karenmamore@gmail.com",
+  "cintya.nascimento@unemat.br",
+  "danielletavares@unemat.br"
+];
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-let USER=null,IS_ADMIN=false;
-let ST={
-  instrumento:{
-    titulo:"Carta do Pantanal — Instrumento Jurídico de Compromisso Territorial",
-    preambulo:"Nós, signatários deste instrumento, reunidos na II Conferência das Partes do Pantanal, realizada em Cáceres-MT, reconhecendo a urgência climática, a relevância global do bioma Pantanal e os compromissos assumidos na Carta do Pantanal de 2025, firmamos o presente instrumento como expressão de vontade coletiva com força moral, política e jurídica.",
-    natureza:"Termo de Compromisso Multilateral de Governança Territorial",
-    fundamentacao:[
+let CURRENT_USER = null;
+let IS_ADMIN = false;
+let VIEW = 'publico';
+let ST = {
+  instrumento: {
+    titulo: "Carta do Pantanal — Instrumento Jurídico de Compromisso Territorial",
+    preambulo: "Nós, signatários deste instrumento, reunidos na II Conferência das Partes do Pantanal, realizada em Cáceres-MT, reconhecendo a urgência climática, a relevância global do bioma Pantanal e os compromissos assumidos na Carta do Pantanal de 2025, firmamos o presente instrumento como expressão de vontade coletiva com força moral, política e jurídica.",
+    natureza: "Termo de Compromisso Multilateral de Governança Territorial",
+    fundamentacao: [
       "Lei n.º 9.985/2000 — Sistema Nacional de Unidades de Conservação (SNUC)",
       "Lei n.º 12.651/2012 — Código Florestal Brasileiro",
       "Lei n.º 9.433/1997 — Política Nacional de Recursos Hídricos",
       "Acordo de Paris (2015) — Art. 7º, Adaptação",
-      "Agenda 2030 — ODS 13 (Ação Climática), ODS 15 (Vida Terrestre), ODS 6 (Água Potável)",
-      "Declaração Universal dos Direitos da Natureza (Ecuador, 2008)",
+      "Agenda 2030 — ODS 13, ODS 15 e ODS 6",
+      "Declaração Universal dos Direitos da Natureza (Equador, 2008)",
       "Convenção 169 da OIT — Povos Indígenas e Tribais",
       "Lei n.º 14.119/2021 — Política Nacional de Pagamento por Serviços Ambientais"
     ],
-    status:"rascunho"
+    status: "rascunho"
   },
-  eixos:[
+  eixos: [
     {id:"e1",cor:"#c0392b",icon:"🔍",titulo:"Eixo I — Diagnóstico",sub:"Forças e fragilidades estruturais",
-    clausulas:[
-      {id:"c1_1",tipo:"obrigacao",texto:"Os signatários reconhecem a ausência de políticas públicas integradas para gestão do Pantanal como falha estrutural a ser sanada pelo Estado brasileiro, com prazo máximo de 24 meses para elaboração de marco regulatório específico.",status:"proposta",prioridade:"alta"},
-      {id:"c1_2",tipo:"declaracao",texto:"Declara-se que o desmatamento e o uso insustentável do solo comprometem diretamente a segurança hídrica da Bacia do Rio Paraguai, afetando populações em três países.",status:"proposta",prioridade:"alta"},
-      {id:"c1_3",tipo:"obrigacao",texto:"O Poder Público signatário se compromete a criar, no prazo de 12 meses, um sistema de monitoramento público e permanente de incêndios no bioma Pantanal, com dados abertos e acessíveis.",status:"proposta",prioridade:"urgente"}
+     clausulas:[
+      {id:"c1_1",tipo:"declaracao",texto:"Os signatários reconhecem a ausência de políticas públicas integradas para gestão do Pantanal como falha estrutural a ser sanada pelo Estado brasileiro, com prazo máximo de 24 meses para elaboração de marco regulatório específico.",status:"proposta",prioridade:"alta"},
+      {id:"c1_2",tipo:"declaracao",texto:"O desmatamento e o uso insustentável do solo comprometem diretamente a segurança hídrica da Bacia do Rio Paraguai, afetando populações em três países.",status:"proposta",prioridade:"alta"},
+      {id:"c1_3",tipo:"obrigacao",texto:"O Poder Público signatário compromete-se a criar, no prazo de 12 meses, sistema de monitoramento público e permanente de incêndios no bioma Pantanal, com dados abertos e acessíveis.",status:"proposta",prioridade:"urgente"},
+      {id:"c1_4",tipo:"declaracao",texto:"A pressão de grandes empreendimentos e monoculturas nas bordas do bioma constitui ameaça real à integridade ecológica do Pantanal, exigindo avaliação de impacto ambiental reforçada.",status:"proposta",prioridade:"alta"},
+      {id:"c1_5",tipo:"declaracao",texto:"A desvalorização das comunidades tradicionais e da juventude rural fragiliza o tecido social pantaneiro e compromete a transmissão do conhecimento ecológico local.",status:"proposta",prioridade:"media"},
+      {id:"c1_6",tipo:"obrigacao",texto:"Os signatários comprometem-se a fortalecer a educação ambiental nas escolas dos municípios pantaneiros, combatendo a desinformação e reconectando sociedade e natureza.",status:"proposta",prioridade:"media"}
     ]},
     {id:"e2",cor:"#0d5c8f",icon:"🌊",titulo:"Eixo II — Horizontes",sub:"Oportunidades para um novo pacto",
-    clausulas:[
-      {id:"c2_1",tipo:"compromisso",texto:"Os entes signatários comprometem-se a fomentar cadeias produtivas de bioeconomia local, vinculando incentivos fiscais e acesso a crédito às práticas sustentáveis comprovadas.",status:"proposta",prioridade:"media"},
-      {id:"c2_2",tipo:"obrigacao",texto:"Fica estabelecida a obrigação de ampliar em 30% a cobertura de educação ambiental nas escolas dos municípios pantaneiros até 2027, com conteúdo curricular específico sobre o bioma.",status:"proposta",prioridade:"alta"},
-      {id:"c2_3",tipo:"compromisso",texto:"Os signatários apoiarão a implementação de ciência cidadã integrando universidades, escolas e comunidades locais no monitoramento ambiental permanente do Pantanal.",status:"proposta",prioridade:"media"}
+     clausulas:[
+      {id:"c2_1",tipo:"compromisso",texto:"Os entes signatários comprometem-se a fomentar cadeias produtivas de bioeconomia local, vinculando incentivos fiscais e acesso a crédito às práticas sustentáveis comprovadas e ao ciclo das águas.",status:"proposta",prioridade:"media"},
+      {id:"c2_2",tipo:"obrigacao",texto:"Os signatários apoiarão a ampliação das políticas de restauração ecológica e manejo sustentável do fogo, valorizando o saber tradicional como componente técnico legítimo.",status:"proposta",prioridade:"alta"},
+      {id:"c2_3",tipo:"obrigacao",texto:"Fica estabelecida a obrigação de ampliar em 30% a cobertura de educação ambiental crítica e emancipatória nas escolas dos municípios pantaneiros até 2027.",status:"proposta",prioridade:"alta"},
+      {id:"c2_4",tipo:"compromisso",texto:"Os signatários apoiarão a implementação de ciência cidadã integrando universidades, escolas e comunidades locais no monitoramento ambiental permanente do Pantanal.",status:"proposta",prioridade:"media"},
+      {id:"c2_5",tipo:"compromisso",texto:"O turismo sustentável e solidário será fomentado como gerador de renda e reforço da identidade cultural pantaneira, vedando práticas incompatíveis com a conservação do bioma.",status:"proposta",prioridade:"media"},
+      {id:"c2_6",tipo:"obrigacao",texto:"Os signatários garantirão participação social efetiva nos Comitês de Bacia Hidrográfica do Rio Paraguai, assegurando representação dos povos tradicionais.",status:"proposta",prioridade:"alta"},
+      {id:"c2_7",tipo:"compromisso",texto:"Os signatários envidarão esforços para inserir o Pantanal nas agendas globais de clima e biodiversidade como símbolo de cooperação internacional pela vida.",status:"proposta",prioridade:"alta"}
     ]},
     {id:"e3",cor:"#1a6b2e",icon:"🤝",titulo:"Eixo III — Compromissos",sub:"Ciência, saberes e ação coletiva",
-    clausulas:[
-      {id:"c3_1",tipo:"obrigacao",texto:"Os signatários obrigam-se a reconhecer e proteger os direitos territoriais dos povos tradicionais pantaneiros, vedando qualquer ação ou omissão que resulte em violação ou restrição desses direitos.",status:"proposta",prioridade:"urgente"},
+     clausulas:[
+      {id:"c3_1",tipo:"obrigacao",texto:"Os signatários obrigam-se a reconhecer e proteger os direitos territoriais dos povos tradicionais pantaneiros, vedando qualquer ação ou omissão que resulte em violação desses direitos.",status:"proposta",prioridade:"urgente"},
       {id:"c3_2",tipo:"compromisso",texto:"As instituições de ensino e pesquisa signatárias comprometem-se a integrar ciência, educação e gestão ambiental em projetos permanentes com as comunidades locais.",status:"proposta",prioridade:"alta"},
-      {id:"c3_3",tipo:"declaracao",texto:"Declara-se o protagonismo das mulheres pantaneiras, jovens e educadores ambientais como elemento central e inegociável de qualquer política territorial no bioma.",status:"proposta",prioridade:"alta"}
+      {id:"c3_3",tipo:"obrigacao",texto:"Os signatários apoiarão a transição ecológica justa, substituindo modelos predatórios por economias regenerativas com base em evidências científicas.",status:"proposta",prioridade:"alta"},
+      {id:"c3_4",tipo:"declaracao",texto:"O protagonismo das mulheres pantaneiras, jovens e educadores ambientais é elemento central e inegociável de qualquer política territorial no bioma.",status:"proposta",prioridade:"alta"},
+      {id:"c3_5",tipo:"compromisso",texto:"Ciência, educação e gestão ambiental serão integradas em projeto de futuro que una conhecimento e ética, reconhecendo a interdependência entre saberes científicos e tradicionais.",status:"proposta",prioridade:"alta"},
+      {id:"c3_6",tipo:"obrigacao",texto:"Os Comitês de Bacia Hidrográfica serão reforçados como espaços legítimos de participação e planejamento territorial, com suporte técnico e financeiro adequado.",status:"proposta",prioridade:"alta"}
     ]},
     {id:"e4",cor:"#d4890a",icon:"⚖️",titulo:"Eixo IV — Demandas à COP 30",sub:"Chamado aos governos e à comunidade internacional",
-    clausulas:[
-      {id:"c4_1",tipo:"obrigacao",texto:"Os entes governamentais signatários comprometem-se a pressionar formalmente a agenda da COP 30 para que o bioma Pantanal seja incluído como zona estratégica de resiliência climática global.",status:"proposta",prioridade:"urgente"},
-      {id:"c4_2",tipo:"compromisso",texto:"Os signatários apoiarão ativamente a criação de um Fundo Internacional de Restauração e Governança das Aguas do Pantanal, com participação da sociedade civil.",status:"proposta",prioridade:"alta"},
-      {id:"c4_3",tipo:"obrigacao",texto:"O Poder Público signatário compromete-se a adotar planos permanentes e cientificamente embasados de prevenção e manejo do fogo, com recursos orçamentários garantidos.",status:"proposta",prioridade:"urgente"},
-      {id:"c4_4",tipo:"declaracao",texto:"Reconhece-se o direito à existência, à regeneração e ao livre curso das águas do Rio Paraguai como direito fundamental da natureza, nos termos do movimento global de direitos da natureza.",status:"proposta",prioridade:"alta"}
+     clausulas:[
+      {id:"c4_1",tipo:"obrigacao",texto:"Os entes governamentais signatários comprometem-se a pressionar formalmente a agenda da COP 30 para inclusão do Pantanal como zona estratégica de resiliência climática global.",status:"proposta",prioridade:"urgente"},
+      {id:"c4_2",tipo:"compromisso",texto:"Os signatários apoiarão a criação de um Fundo Internacional de Restauração e Governança das Águas do Pantanal, com participação da sociedade civil e das comunidades locais.",status:"proposta",prioridade:"alta"},
+      {id:"c4_3",tipo:"obrigacao",texto:"O Poder Público signatário compromete-se a garantir proteção e regularização fundiária dos territórios tradicionais e coletivos no Pantanal.",status:"proposta",prioridade:"urgente"},
+      {id:"c4_4",tipo:"obrigacao",texto:"Os signatários governamentais garantirão representação direta dos povos locais pantaneiros nas decisões estratégicas da COP 30.",status:"proposta",prioridade:"urgente"},
+      {id:"c4_5",tipo:"obrigacao",texto:"As instituições ambientais serão fortalecidas com recursos adequados, autonomia técnica e mecanismos de transparência e controle social.",status:"proposta",prioridade:"alta"},
+      {id:"c4_6",tipo:"compromisso",texto:"Os signatários estabelecerão parcerias com organizações globais comprometidas com impacto positivo real e distribuição equitativa de benefícios.",status:"proposta",prioridade:"media"},
+      {id:"c4_7",tipo:"obrigacao",texto:"A educação ambiental e a cultura pantaneira serão promovidas como pilares da sustentabilidade e identidade territorial em todos os níveis de ensino.",status:"proposta",prioridade:"alta"},
+      {id:"c4_8",tipo:"obrigacao",texto:"Planos permanentes e cientificamente embasados de prevenção e manejo do fogo serão adotados, com recursos orçamentários garantidos e participação das comunidades.",status:"proposta",prioridade:"urgente"},
+      {id:"c4_9",tipo:"obrigacao",texto:"As nascentes do Rio Paraguai serão restauradas prioritariamente, reconhecendo-o como eixo hidrológico principal do bioma Pantanal.",status:"proposta",prioridade:"urgente"},
+      {id:"c4_10",tipo:"obrigacao",texto:"Será implantada política de corredores bioculturais no Pantanal para manutenção da biodiversidade e da diversidade cultural das populações tradicionais.",status:"proposta",prioridade:"alta"},
+      {id:"c4_11",tipo:"declaracao",texto:"Os signatários reconhecem e promoverão o direito à existência e ao livre curso das águas do Rio Paraguai como direito fundamental da natureza.",status:"proposta",prioridade:"alta"}
     ]},
     {id:"e5",cor:"#6c3483",icon:"🌿",titulo:"Eixo V — Chamado à Ação",sub:"O Pantanal é agora",
-    clausulas:[
-      {id:"c5_1",tipo:"obrigacao",texto:"Os signatários obrigam-se a garantir que decisões políticas relacionadas ao Pantanal sejam precedidas de consulta à comunidade científica e embasadas em dados e evidências verificáveis.",status:"proposta",prioridade:"alta"},
-      {id:"c5_2",tipo:"compromisso",texto:"A educação ambiental social, empreendedora e inovadora será tratada como prioridade estrutural de Estado pelos entes públicos signatários, com previsão orçamentária específica.",status:"proposta",prioridade:"alta"},
-      {id:"c5_3",tipo:"obrigacao",texto:"Os signatários garantem a participação direta e efetiva dos povos tradicionais em todas as decisões que os afetem, vedando decisões unilaterais sobre seus territórios.",status:"proposta",prioridade:"urgente"}
+     clausulas:[
+      {id:"c5_1",tipo:"obrigacao",texto:"Os signatários garantem que decisões políticas relacionadas ao Pantanal sejam precedidas de consulta à comunidade científica e embasadas em dados e evidências verificáveis.",status:"proposta",prioridade:"alta"},
+      {id:"c5_2",tipo:"obrigacao",texto:"A educação ambiental social, empreendedora e inovadora será tratada como prioridade estrutural de Estado pelos entes públicos signatários, com previsão orçamentária específica.",status:"proposta",prioridade:"alta"},
+      {id:"c5_3",tipo:"obrigacao",texto:"Os signatários garantem a participação direta e efetiva dos povos tradicionais em todas as decisões que os afetem, vedando decisões unilaterais sobre seus territórios.",status:"proposta",prioridade:"urgente"},
+      {id:"c5_4",tipo:"compromisso",texto:"A terra, a água e o fogo serão manejados com sabedoria, equilíbrio e responsabilidade geracional, integrando ciência e conhecimento tradicional.",status:"proposta",prioridade:"alta"}
     ]}
   ],
-  signatarios:[
-    {id:"s1",nome:"UNEMAT — Universidade do Estado de Mato Grosso",tipo:"Instituição de Ensino Superior",municipio:"Cáceres-MT",representante:"Reitoria",status:"confirmado",data:"2025-11-12"},
-    {id:"s2",nome:"Prefeitura Municipal de Cáceres",tipo:"Poder Público Municipal",municipio:"Cáceres-MT",representante:"",status:"pendente",data:""}
+  signatarios: [
+    {id:"s1",nome:"UNEMAT — Universidade do Estado de Mato Grosso",tipo:"Instituição de Ensino Superior",municipio:"Cáceres-MT",representante:"Reitoria",status:"confirmado",data:"2025-11-12",email:""}
   ],
-  propostas:[],
-  log:[]
+  propostas: [],
+  log: []
 };
 
-// ── USERS ──────────────────────────────────────────────────────────────────
-const USERS=[
-  {id:"ES",name:"Ernandes Sobreira",role:"admin",bg:"#1a6b2e",desc:"Coordenador"},
-  {id:"CN",name:"Cintya Nascimento",role:"editor",bg:"#0d5c8f",desc:"Colaboradora"},
-  {id:"DT",name:"Danielle Tavares",role:"editor",bg:"#6c3483",desc:"Colaboradora"}
-];
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function fmt(iso){if(!iso)return'—';try{return new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return'—';}}
+function fmtDate(iso){if(!iso)return'—';try{return new Date(iso+'T12:00:00').toLocaleDateString('pt-BR');}catch(e){return'—';}}
+function toast(m,t){const e=document.getElementById('toast');if(!e)return;e.textContent=m;e.className='toast show'+(t&&t!=='ok'?' '+t:'');setTimeout(()=>{if(e)e.className='toast';},3200);}
+function setStatus(m,t){const e=document.getElementById('pill');if(e){e.textContent=m;e.className='pill '+t;}}
+function addLog(a,d){if(!CURRENT_USER)return;ST.log.unshift({ts:new Date().toISOString(),user:CURRENT_USER.displayName||CURRENT_USER.email,acao:a,detalhe:d||""});if(ST.log.length>500)ST.log=ST.log.slice(0,500);}
 const TIPO_COR={obrigacao:"#c0392b",compromisso:"#1a6b2e",declaracao:"#0d5c8f"};
 const TIPO_LABEL={obrigacao:"Obrigação",compromisso:"Compromisso",declaracao:"Declaração"};
 const PRIOR_COR={urgente:"#c0392b",alta:"#d4890a",media:"#1a6b2e"};
-const STATUS_COR={proposta:"#9ca3af",revisao:"#d4890a",aprovada:"#1a6b2e",vetada:"#c0392b"};
 
-// ── FIREBASE ───────────────────────────────────────────────────────────────
+// ── FIREBASE OPS ──────────────────────────────────────────────────────────
 async function fbLoad(){
   try{
-    const s=await db.ref(BASE).get();
+    const s = await db.ref(BASE).get();
     if(s.exists()){
-      const d=s.val();
-      if(d.eixos)ST.eixos=d.eixos;
-      if(d.instrumento)ST.instrumento=d.instrumento;
-      if(d.signatarios)ST.signatarios=d.signatarios;
-      if(d.propostas)ST.propostas=d.propostas;
-      if(d.log)ST.log=d.log;
-    }else{await fbSave();}
+      const d = s.val();
+      if(d.eixos) ST.eixos = d.eixos;
+      if(d.instrumento) ST.instrumento = d.instrumento;
+      if(d.signatarios) ST.signatarios = d.signatarios;
+      if(d.propostas) ST.propostas = d.propostas;
+      if(d.log) ST.log = d.log;
+    } else { await fbSave(); }
     setStatus("Firebase ativo","ok");
-  }catch(e){setStatus("Modo local","warn");}
+  } catch(e){ setStatus("Modo local","warn"); }
 }
 async function fbSave(){
-  try{await db.ref(BASE).set(ST);setStatus("Salvo "+new Date().toLocaleTimeString('pt-BR'),"ok");}
-  catch(e){setStatus("Erro ao salvar","err");}
+  try{ await db.ref(BASE).set(ST); setStatus("Salvo "+new Date().toLocaleTimeString('pt-BR'),"ok"); }
+  catch(e){ setStatus("Erro ao salvar","err"); }
 }
-function addLog(a,d){
-  ST.log.unshift({ts:new Date().toISOString(),user:USER,acao:a,detalhe:d||""});
-  if(ST.log.length>500)ST.log=ST.log.slice(0,500);
-}
-function setStatus(m,t){const e=document.getElementById('pill');if(e){e.textContent=m;e.className='pill '+t;}}
-function toast(m,t='ok'){
-  const e=document.getElementById('toast');
-  e.textContent=m;e.className='toast show'+(t!=='ok'?' '+t:'');
-  setTimeout(()=>e.className='toast',3000);
-}
-function fmt(iso){if(!iso)return'—';return new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
-function fmtDate(iso){if(!iso)return'—';return new Date(iso+'T00:00:00').toLocaleDateString('pt-BR');}
 
-// ── RENDER PRINCIPAL ───────────────────────────────────────────────────────
-let VIEW='home';
+// ── AUTH ──────────────────────────────────────────────────────────────────
+function loginGoogle(){
+  auth.signInWithPopup(provider).catch(e=>{
+    toast("Erro no login: "+e.message,"err");
+  });
+}
+function logout(){
+  auth.signOut();
+}
+auth.onAuthStateChanged(user=>{
+  CURRENT_USER = user;
+  IS_ADMIN = user ? ADMINS.includes(user.email) : false;
+  if(user){ fbLoad().then(()=>render()); }
+  else { VIEW='publico'; render(); }
+});
+
+// ── RENDER ────────────────────────────────────────────────────────────────
 function render(){
-  const app=document.getElementById('app');
-  if(!USER){renderLogin(app);return;}
-  let html=buildNav()+`<div class="main-content">`;
-  if(VIEW==='home') html+=renderHome();
-  else if(VIEW==='instrumento') html+=renderInstrumento();
-  else if(VIEW==='eixos') html+=renderEixos();
-  else if(VIEW==='signatarios') html+=renderSignatarios();
-  else if(VIEW==='propostas') html+=renderPropostas();
-  else if(VIEW==='admin') html+=renderAdmin();
-  else if(VIEW==='log') html+=renderLog();
-  html+=`</div>`;
-  app.innerHTML=html;
+  const app = document.getElementById('app');
+  if(!app) return;
+  app.innerHTML = buildNav() + '<div class="main-content">' + renderView() + '</div>';
 }
-
-// ── LOGIN ──────────────────────────────────────────────────────────────────
-function renderLogin(app){
-  app.innerHTML=`
-  <div class="login-page">
-    <div class="login-bg-shapes">
-      <div class="shape s1"></div><div class="shape s2"></div><div class="shape s3"></div>
-    </div>
-    <div class="login-card">
-      <div class="login-badge">COP PANTANAL II</div>
-      <h1 class="login-title">Instrumento<br><em>Jurídico</em></h1>
-      <p class="login-desc">Plataforma de formalização e governança da<br>Carta do Pantanal 2025→2030</p>
-      <div class="login-divider"><span>Selecione seu perfil</span></div>
-      <div class="login-users">
-        ${USERS.map(u=>`
-        <button class="login-user-btn" onclick="window.doLogin('${u.name}','${u.role}','${u.bg}')">
-          <span class="lu-av" style="background:${u.bg}">${u.id}</span>
-          <div class="lu-info"><span class="lu-name">${u.name}</span><span class="lu-role">${u.desc} · ${u.role==='admin'?'Administrador':'Editor'}</span></div>
-          <span class="lu-arr">→</span>
-        </button>`).join('')}
-      </div>
-      <p class="login-footer">🌿 Enquanto houver Pantanal, haverá futuro</p>
-    </div>
-  </div>`;
+function renderView(){
+  if(VIEW==='publico')   return renderPublico();
+  if(VIEW==='instrumento') return renderInstrumento();
+  if(VIEW==='clausulas') return renderClausulas();
+  if(VIEW==='signatarios') return renderSignatarios();
+  if(VIEW==='propostas') return renderPropostas();
+  if(VIEW==='admin')     return renderAdmin();
+  if(VIEW==='log')       return renderLog();
+  return renderPublico();
 }
 
 // ── NAV ────────────────────────────────────────────────────────────────────
 function buildNav(){
-  const uc=USERS.find(u=>u.name===USER);
-  const av=USER.split(' ').map(x=>x[0]).join('').slice(0,2);
-  const bg=uc?uc.bg:'#1a6b2e';
-  const navItems=[
-    {v:'home',icon:'🏠',label:'Início'},
-    {v:'instrumento',icon:'📜',label:'Instrumento'},
-    {v:'eixos',icon:'⚖️',label:'Cláusulas'},
-    {v:'signatarios',icon:'✍️',label:'Signatários'},
-    {v:'propostas',icon:'💬',label:'Propostas'},
-    ...(IS_ADMIN?[{v:'admin',icon:'⚙️',label:'Admin'}]:[]),
-    {v:'log',icon:'📋',label:'Registro'},
-  ];
-  return`<nav class="top-nav">
+  const loggedIn = !!CURRENT_USER;
+  const foto = loggedIn && CURRENT_USER.photoURL
+    ? `<img src="${CURRENT_USER.photoURL}" class="nav-foto" referrerpolicy="no-referrer">`
+    : `<span class="nav-av">${loggedIn?(CURRENT_USER.displayName||CURRENT_USER.email||'?')[0].toUpperCase():'?'}</span>`;
+
+  const privateItems = loggedIn ? `
+    <a class="nav-link${VIEW==='clausulas'?' active':''}" href="#" onclick="setV('clausulas');return false;">⚖️ Cláusulas</a>
+    <a class="nav-link${VIEW==='signatarios'?' active':''}" href="#" onclick="setV('signatarios');return false;">✍️ Signatários</a>
+    <a class="nav-link${VIEW==='propostas'?' active':''}" href="#" onclick="setV('propostas');return false;">💬 Propostas</a>
+    ${IS_ADMIN?`<a class="nav-link${VIEW==='admin'?' active':''}" href="#" onclick="setV('admin');return false;">⚙️ Admin</a>`:''}
+    <a class="nav-link${VIEW==='log'?' active':''}" href="#" onclick="setV('log');return false;">📋 Registro</a>` : '';
+
+  const authBtn = loggedIn
+    ? `<div class="nav-user-info">${foto}<span class="nav-uname">${(CURRENT_USER.displayName||CURRENT_USER.email||'').split(' ')[0]}</span>${IS_ADMIN?'<span class="admin-badge">ADMIN</span>':''}</div>
+       <span id="pill" class="pill ok">Firebase...</span>
+       <button class="btn-save" onclick="window.salvar()" title="Salvar">💾</button>
+       <button class="btn-logout" onclick="logout()">Sair</button>`
+    : `<button class="btn-google-login" onclick="loginGoogle()"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Entrar com Google</button>`;
+
+  return `<nav class="top-nav">
   <div class="nav-brand">
     <span class="nav-leaf">🌿</span>
-    <div><div class="nav-title">COP Pantanal II</div><div class="nav-sub">Instrumento Jurídico</div></div>
+    <div>
+      <div class="nav-title">COP Pantanal II</div>
+      <div class="nav-sub">Instrumento Jurídico</div>
+    </div>
   </div>
   <div class="nav-links">
-    ${navItems.map(n=>`<a class="nav-link${VIEW===n.v?' active':''}" href="#" onclick="window.setView('${n.v}');return false;">${n.icon} ${n.label}</a>`).join('')}
+    <a class="nav-link${VIEW==='publico'?' active':''}" href="#" onclick="setV('publico');return false;">🏛️ Público</a>
+    <a class="nav-link${VIEW==='instrumento'?' active':''}" href="#" onclick="setV('instrumento');return false;">📜 Instrumento</a>
+    ${privateItems}
   </div>
-  <div class="nav-right">
-    <span id="pill" class="pill ok">Firebase...</span>
-    <div class="nav-user"><span class="nav-av" style="background:${bg}">${av}</span><span class="nav-name">${USER.split(' ')[0]}</span>${IS_ADMIN?'<span class="admin-badge">ADMIN</span>':''}</div>
-    <button class="btn-save" onclick="window.salvar()">💾</button>
-    <button class="btn-logout" onclick="window.doLogout()">Sair</button>
-  </div>
+  <div class="nav-right">${authBtn}</div>
 </nav>`;
 }
 
-// ── HOME ───────────────────────────────────────────────────────────────────
-function renderHome(){
-  const totalClauses=ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).length,0);
-  const aprov=ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).filter(c=>c.status==='aprovada').length,0);
-  const urgentes=ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).filter(c=>c.prioridade==='urgente').length,0);
-  const sigConf=ST.signatarios.filter(s=>s.status==='confirmado').length;
-  const pct=totalClauses>0?Math.round(aprov/totalClauses*100):0;
-  const props=ST.propostas.length;
-  const diasCOP30=Math.ceil((new Date('2025-11-10')-new Date())/86400000)*-1+365;
+// ── PAINEL PÚBLICO ─────────────────────────────────────────────────────────
+function renderPublico(){
+  const totalC = ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).length,0);
+  const aprov  = ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).filter(c=>c.status==='aprovada').length,0);
+  const urgentes = ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).filter(c=>c.prioridade==='urgente').length,0);
+  const sigConf = (ST.signatarios||[]).filter(s=>s.status==='confirmado').length;
+  const pct = totalC>0 ? Math.round(aprov/totalC*100) : 0;
 
-  return`
-  <div class="home-hero">
-    <div class="hero-eyebrow">🌿 II Conferência das Partes do Pantanal · Cáceres-MT · 2026</div>
-    <h1 class="hero-h1">Formalização Jurídica<br><em>da Carta do Pantanal</em></h1>
-    <p class="hero-lead">Transformando um manifesto político em instrumento jurídico de compromisso territorial multilateral — com força legal, monitoramento e responsabilização pública.</p>
-    <div class="hero-actions">
-      <button class="btn-primary" onclick="window.setView('instrumento')">📜 Ver Instrumento</button>
-      <button class="btn-outline" onclick="window.setView('eixos')">⚖️ Revisar Cláusulas</button>
+  return `
+  <!-- HERO -->
+  <div class="pub-hero">
+    <div class="pub-hero-badge">🌿 COP PANTANAL II · CÁCERES-MT · 2026</div>
+    <h1 class="pub-hero-h1">Formalização Jurídica<br><em>da Carta do Pantanal</em></h1>
+    <p class="pub-hero-lead">Transformando o manifesto coletivo de 500+ vozes em instrumento jurídico de compromisso territorial com força legal e responsabilização pública — da COP I à COP 30.</p>
+    <div class="pub-hero-btns">
+      <button class="btn-primary" onclick="setV('instrumento')">📜 Ver Instrumento</button>
+      <button class="btn-outline" onclick="document.getElementById('sec-adesao').scrollIntoView({behavior:'smooth'})">✍️ Assinar Adesão</button>
     </div>
   </div>
 
-  <div class="kpi-grid">
-    <div class="kpi-card" style="--kc:#1a6b2e">
-      <div class="kpi-icon">📋</div>
-      <div class="kpi-val">${totalClauses}</div>
-      <div class="kpi-label">Cláusulas totais</div>
+  <!-- LINHA DO TEMPO -->
+  <div class="timeline-strip">
+    <div class="tl-item tl-done">
+      <div class="tl-dot done"></div>
+      <div class="tl-label">COP Pantanal I</div>
+      <div class="tl-date">Nov 2025</div>
     </div>
-    <div class="kpi-card" style="--kc:#c0392b">
-      <div class="kpi-icon">🚨</div>
-      <div class="kpi-val">${urgentes}</div>
-      <div class="kpi-label">Prioridade urgente</div>
+    <div class="tl-line done"></div>
+    <div class="tl-item tl-active">
+      <div class="tl-dot active"></div>
+      <div class="tl-label">COP Pantanal II</div>
+      <div class="tl-date">2026 ← agora</div>
     </div>
-    <div class="kpi-card" style="--kc:#0d5c8f">
-      <div class="kpi-icon">✅</div>
-      <div class="kpi-val">${aprov}</div>
-      <div class="kpi-label">Aprovadas</div>
+    <div class="tl-line"></div>
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-label">COP Pantanal III</div>
+      <div class="tl-date">2027</div>
     </div>
-    <div class="kpi-card" style="--kc:#d4890a">
-      <div class="kpi-icon">✍️</div>
-      <div class="kpi-val">${sigConf}</div>
-      <div class="kpi-label">Signatários confirmados</div>
-    </div>
-    <div class="kpi-card" style="--kc:#6c3483">
-      <div class="kpi-icon">💬</div>
-      <div class="kpi-val">${props}</div>
-      <div class="kpi-label">Propostas enviadas</div>
-    </div>
-    <div class="kpi-card" style="--kc:#1a7a6b">
-      <div class="kpi-icon">📅</div>
-      <div class="kpi-val">${pct}%</div>
-      <div class="kpi-label">Cláusulas aprovadas</div>
+    <div class="tl-line"></div>
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-label">COP 30 Belém</div>
+      <div class="tl-date">2025</div>
     </div>
   </div>
 
-  <div class="section-title-row"><h2>Status por Eixo</h2></div>
-  <div class="eixos-progress">
+  <!-- KPIs -->
+  <div class="pub-kpis">
+    <div class="pkpi" style="--kc:#1a6b2e">
+      <div class="pkpi-val">${totalC}</div>
+      <div class="pkpi-label">Cláusulas jurídicas</div>
+    </div>
+    <div class="pkpi" style="--kc:#c0392b">
+      <div class="pkpi-val">${urgentes}</div>
+      <div class="pkpi-label">Prioridade urgente</div>
+    </div>
+    <div class="pkpi" style="--kc:#0d5c8f">
+      <div class="pkpi-val">${sigConf}</div>
+      <div class="pkpi-label">Signatários confirmados</div>
+    </div>
+    <div class="pkpi" style="--kc:#d4890a">
+      <div class="pkpi-val">${pct}%</div>
+      <div class="pkpi-label">Cláusulas aprovadas</div>
+    </div>
+  </div>
+
+  <!-- BARRA DE PROGRESSO GERAL -->
+  <div class="pub-prog-wrap">
+    <div class="pub-prog-label">Progresso geral das cláusulas</div>
+    <div class="pub-prog-track"><div class="pub-prog-fill" style="width:${pct}%"></div></div>
+    <div class="pub-prog-pct">${aprov} de ${totalC} aprovadas</div>
+  </div>
+
+  <!-- STATUS POR EIXO -->
+  <div class="section-hd"><h2>Progresso por Eixo</h2></div>
+  <div class="eixos-pub">
     ${ST.eixos.map(e=>{
-      const tot=(e.clausulas||[]).length;
-      const ap=(e.clausulas||[]).filter(c=>c.status==='aprovada').length;
-      const pct=tot>0?Math.round(ap/tot*100):0;
-      return`<div class="ep-card" style="--ec:${e.cor}">
-        <div class="ep-icon">${e.icon||'⚖️'}</div>
-        <div class="ep-info">
+      const tot = (e.clausulas||[]).length;
+      const ap  = (e.clausulas||[]).filter(c=>c.status==='aprovada').length;
+      const p   = tot>0 ? Math.round(ap/tot*100) : 0;
+      return `<div class="ep-row" style="--ec:${e.cor}">
+        <span class="ep-icon">${e.icon||''}</span>
+        <div class="ep-body">
           <div class="ep-tit">${e.titulo}</div>
-          <div class="ep-sub">${e.sub}</div>
-          <div class="ep-bar-wrap"><div class="ep-bar"><div class="ep-fill" style="width:${pct}%;background:${e.cor}"></div></div><span class="ep-pct">${pct}%</span></div>
+          <div class="ep-bar-wrap">
+            <div class="ep-bar"><div class="ep-fill" style="width:${p}%;background:${e.cor}"></div></div>
+            <span class="ep-pct" style="color:${e.cor}">${p}%</span>
+          </div>
         </div>
         <div class="ep-cnt" style="color:${e.cor}">${ap}/${tot}</div>
       </div>`;
     }).join('')}
   </div>
 
-  <div class="section-title-row"><h2>Tipos de Instrumento Jurídico</h2><span class="section-sub">Escolha o caminho mais adequado para cada contexto</span></div>
-  <div class="tipos-grid">
-    <div class="tipo-card t-adesao">
-      <div class="tipo-num">01</div>
-      <h3>Protocolo de Adesão</h3>
-      <p>Instituições assinam formalmente comprometendo-se com os eixos. Gera responsabilização pública e base para cobranças.</p>
-      <div class="tipo-tag">Nível institucional</div>
+  <!-- INSTRUMENTO RESUMO -->
+  <div class="section-hd"><h2>📜 O Instrumento Jurídico</h2></div>
+  <div class="pub-inst-card">
+    <div class="pic-seal">⚖️</div>
+    <div class="pic-body">
+      <div class="pic-natureza">${ST.instrumento.natureza}</div>
+      <p class="pic-preamble">${ST.instrumento.preambulo}</p>
+      <div class="pic-bases">
+        <div class="pic-bases-title">Fundamentação legal (${ST.instrumento.fundamentacao.length} bases)</div>
+        <div class="pic-bases-list">
+          ${ST.instrumento.fundamentacao.map(f=>`<span class="pic-base-tag">${f.split('—')[0].trim()}</span>`).join('')}
+        </div>
+      </div>
+      <button class="btn-outline" onclick="setV('instrumento')" style="margin-top:16px">Ver documento completo →</button>
     </div>
-    <div class="tipo-card t-decreto">
-      <div class="tipo-num">02</div>
-      <h3>Decreto Municipal/Estadual</h3>
-      <p>Apresentar a Carta à Câmara ou ALMT como base para decreto que reconheça os princípios como política pública.</p>
-      <div class="tipo-tag">Nível legislativo</div>
-    </div>
-    <div class="tipo-card t-plano">
-      <div class="tipo-num">03</div>
-      <h3>Plano de Ação Territorial</h3>
-      <p>Formatar a Carta com indicadores, metas e responsáveis. Abre porta para captação de recursos (UNESCO, MMA, fundos climáticos).</p>
-      <div class="tipo-tag">Nível financeiro</div>
-    </div>
-    <div class="tipo-card t-termo">
-      <div class="tipo-num">04</div>
-      <h3>Termo de Compromisso Multilateral</h3>
-      <p>Modelo das cartas de cidades climáticas. Partes signatárias assumem obrigações com prazo e monitoramento.</p>
-      <div class="tipo-tag">Nível internacional</div>
-    </div>
-  </div>`;
-}
-
-// ── INSTRUMENTO ────────────────────────────────────────────────────────────
-function renderInstrumento(){
-  const inst=ST.instrumento;
-  return`
-  <div class="page-header">
-    <div class="ph-badge">Documento Jurídico</div>
-    <h2 class="ph-title">📜 Instrumento de Compromisso</h2>
-    <p class="ph-sub">Rascunho ativo — edite e ajuste antes da publicação oficial</p>
-    ${IS_ADMIN?`<button class="btn-edit-inst" onclick="window.editInst()">✏️ Editar Instrumento</button>`:''}
   </div>
 
-  <div class="doc-wrapper">
-    <div class="doc-card">
-      <div class="doc-header">
-        <div class="doc-seal">⚖️</div>
-        <h1 class="doc-title">${inst.titulo}</h1>
-        <div class="doc-meta">
-          <span class="doc-meta-item">📍 Cáceres-MT, Pantanal Norte</span>
-          <span class="doc-meta-item">📅 COP Pantanal II — 2026</span>
-          <span class="doc-meta-item status-${inst.status}">${inst.status.toUpperCase()}</span>
+  <!-- SIGNATÁRIOS -->
+  <div class="section-hd"><h2>✍️ Signatários Confirmados</h2></div>
+  <div class="pub-sigs">
+    ${(ST.signatarios||[]).filter(s=>s.status==='confirmado').map(s=>`
+    <div class="pub-sig-item">
+      <div class="psi-nome">${s.nome}</div>
+      <div class="psi-meta">${s.tipo} · ${s.municipio}</div>
+    </div>`).join('')}
+    ${(ST.signatarios||[]).filter(s=>s.status==='confirmado').length===0?'<p class="empty-msg">Primeiros signatários em breve.</p>':''}
+  </div>
+
+  <!-- FORMULÁRIO DE ADESÃO -->
+  <div class="section-hd" id="sec-adesao"><h2>🖊️ Quero Aderir</h2><span class="section-sub">Instituição ou pessoa física pode manifestar interesse</span></div>
+  <div class="adesao-card">
+    <p class="adesao-intro">Ao aderir, você ou sua instituição declara concordância com os princípios da Carta do Pantanal e compromete-se com as cláusulas do presente instrumento.</p>
+    <div class="adesao-form">
+      <div class="af-row">
+        <div class="af-field">
+          <label>Nome / Instituição *</label>
+          <input id="ad_nome" class="af-inp" placeholder="Ex: Prefeitura de Cáceres">
+        </div>
+        <div class="af-field">
+          <label>Tipo *</label>
+          <select id="ad_tipo" class="af-sel">
+            <option value="">Selecione...</option>
+            <option>Prefeitura Municipal</option>
+            <option>Universidade / Instituto</option>
+            <option>ONG / Organização Social</option>
+            <option>Associação de Povos Tradicionais</option>
+            <option>Empresa com Compromisso Socioambiental</option>
+            <option>Pessoa Física</option>
+            <option>Outro</option>
+          </select>
         </div>
       </div>
-
-      <div class="doc-section">
-        <div class="doc-section-label">NATUREZA DO INSTRUMENTO</div>
-        <p class="doc-nature">${inst.natureza}</p>
-      </div>
-
-      <div class="doc-section">
-        <div class="doc-section-label">PREÂMBULO</div>
-        <p class="doc-preamble">${inst.preambulo}</p>
-      </div>
-
-      <div class="doc-section">
-        <div class="doc-section-label">FUNDAMENTAÇÃO LEGAL</div>
-        <div class="doc-legal-list">
-          ${inst.fundamentacao.map((f,i)=>`<div class="legal-item"><span class="legal-num">${String(i+1).padStart(2,'0')}</span><span>${f}</span></div>`).join('')}
+      <div class="af-row">
+        <div class="af-field">
+          <label>Município-UF *</label>
+          <input id="ad_municipio" class="af-inp" placeholder="Ex: Cáceres-MT">
+        </div>
+        <div class="af-field">
+          <label>Representante / Contato</label>
+          <input id="ad_rep" class="af-inp" placeholder="Nome do representante">
         </div>
       </div>
+      <div class="af-row">
+        <div class="af-field af-wide">
+          <label>E-mail</label>
+          <input id="ad_email" class="af-inp" type="email" placeholder="contato@instituicao.org.br">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="window.enviarAdesao()" style="margin-top:4px">✍️ Enviar manifestação de adesão</button>
+    </div>
+  </div>
 
-      <div class="doc-section">
-        <div class="doc-section-label">CLÁUSULAS POR EIXO</div>
-        <p class="doc-clause-intro">As cláusulas deste instrumento estão organizadas em cinco eixos temáticos, conforme estrutura da Carta do Pantanal de 2025. Cada cláusula especifica o tipo jurídico (Obrigação, Compromisso ou Declaração), a prioridade e o status de aprovação.</p>
-        ${ST.eixos.map((e,ei)=>`
-        <div class="doc-eixo" style="--ec:${e.cor}">
-          <div class="doc-eixo-header">${e.icon||''} ${e.titulo}</div>
-          ${(e.clausulas||[]).map((c,ci)=>`
-          <div class="doc-clause">
-            <div class="clause-num" style="color:${e.cor}">${ei+1}.${ci+1}</div>
-            <div class="clause-body">
-              <div class="clause-tags">
-                <span class="ctag" style="background:${TIPO_COR[c.tipo]||'#999'}">${TIPO_LABEL[c.tipo]||c.tipo}</span>
-                <span class="ctag prior-${c.prioridade}">${c.prioridade.toUpperCase()}</span>
-                <span class="ctag st-${c.status}">${c.status}</span>
-              </div>
-              <p class="clause-text">${c.texto}</p>
+  ${!CURRENT_USER ? `<div class="login-cta">
+    <div class="lcta-icon">🔐</div>
+    <div class="lcta-body">
+      <div class="lcta-title">Área da equipe</div>
+      <p class="lcta-desc">Membros da equipe podem editar cláusulas, gerenciar signatários, enviar propostas e acessar o painel administrativo.</p>
+      <button class="btn-google-login" onclick="loginGoogle()"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Entrar com Google</button>
+    </div>
+  </div>` : ''}`;
+}
+
+// ── INSTRUMENTO JURÍDICO ────────────────────────────────────────────────────
+function renderInstrumento(){
+  const inst = ST.instrumento;
+  return `
+  <div class="page-hd">
+    <div class="ph-badge">Documento Jurídico · ${inst.status.toUpperCase()}</div>
+    <h2 class="ph-title">📜 Instrumento de Compromisso Territorial</h2>
+    ${IS_ADMIN?`<button class="btn-sm-edit" onclick="window.editInst()">✏️ Editar</button>`:''}
+  </div>
+  <div class="doc-card">
+    <div class="doc-header">
+      <div class="doc-seal-big">⚖️</div>
+      <h1 class="doc-title">${inst.titulo}</h1>
+      <div class="doc-meta-row">
+        <span class="dmeta">📍 Cáceres-MT, Pantanal Norte</span>
+        <span class="dmeta">📅 COP Pantanal II — 2026</span>
+        <span class="dmeta status-${inst.status}">${inst.status.toUpperCase()}</span>
+      </div>
+    </div>
+    <div class="doc-sec"><div class="doc-sec-lbl">NATUREZA DO INSTRUMENTO</div>
+      <p class="doc-nature-txt">${inst.natureza}</p></div>
+    <div class="doc-sec"><div class="doc-sec-lbl">PREÂMBULO</div>
+      <p class="doc-preamble">${inst.preambulo}</p></div>
+    <div class="doc-sec"><div class="doc-sec-lbl">FUNDAMENTAÇÃO LEGAL</div>
+      <div class="legal-list">
+        ${inst.fundamentacao.map((f,i)=>`<div class="legal-item"><span class="legal-n">${String(i+1).padStart(2,'0')}</span><span>${f}</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="doc-sec"><div class="doc-sec-lbl">CLÁUSULAS ORGANIZADAS POR EIXO</div>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:16px">Cada cláusula especifica o tipo jurídico (Obrigação, Compromisso ou Declaração), a prioridade e o status de aprovação coletiva.</p>
+      ${ST.eixos.map((e,ei)=>`
+      <div class="doc-eixo" style="border-left:5px solid ${e.cor}">
+        <div class="doc-eixo-hd" style="background:${e.cor}18">${e.icon} ${e.titulo}</div>
+        ${(e.clausulas||[]).map((c,ci)=>`
+        <div class="doc-clause">
+          <div class="dc-num" style="color:${e.cor}">${ei+1}.${ci+1}</div>
+          <div class="dc-body">
+            <div class="dc-tags">
+              <span class="ctag" style="background:${TIPO_COR[c.tipo]||'#999'}">${TIPO_LABEL[c.tipo]||c.tipo}</span>
+              <span class="ctag" style="background:${PRIOR_COR[c.prioridade]||'#999'}">${c.prioridade}</span>
+              <span class="ctag st-${c.status}">${c.status}</span>
             </div>
-          </div>`).join('')}
+            <p class="dc-texto">${c.texto}</p>
+          </div>
         </div>`).join('')}
-      </div>
-
-      <div class="doc-section">
-        <div class="doc-section-label">SIGNATÁRIOS CONFIRMADOS</div>
-        <div class="doc-sigs">
-          ${ST.signatarios.filter(s=>s.status==='confirmado').map(s=>`
-          <div class="doc-sig-item">
-            <div class="sig-org">${s.nome}</div>
-            <div class="sig-meta">${s.tipo} · ${s.municipio}${s.data?` · ${fmtDate(s.data)}`:''}</div>
-          </div>`).join('')}
-          ${ST.signatarios.filter(s=>s.status==='confirmado').length===0?'<p style="color:#9ca3af;font-style:italic">Nenhum signatário confirmado ainda.</p>':''}
-        </div>
-      </div>
-
-      <div class="doc-footer">
-        <div class="doc-foot-text">Instrumento produzido coletivamente no âmbito da II COP Pantanal — Cáceres-MT, 2026</div>
-        <div class="doc-foot-sub">Base para apresentação à Câmara Municipal, ALMT e parceiros institucionais</div>
-        <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Exportar PDF</button>
-      </div>
+      </div>`).join('')}
+    </div>
+    <div class="doc-sec"><div class="doc-sec-lbl">SIGNATÁRIOS CONFIRMADOS</div>
+      ${(ST.signatarios||[]).filter(s=>s.status==='confirmado').map(s=>`
+      <div class="doc-sig"><strong>${s.nome}</strong><span class="doc-sig-meta">${s.tipo} · ${s.municipio}${s.data?' · '+fmtDate(s.data):''}</span></div>`).join('')}
+    </div>
+    <div class="doc-footer">
+      <p>Instrumento produzido coletivamente no âmbito da II COP Pantanal — Cáceres-MT, 2026</p>
+      <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Exportar PDF</button>
     </div>
   </div>`;
 }
 
-// ── EIXOS / CLÁUSULAS ──────────────────────────────────────────────────────
-function renderEixos(){
-  const totalC=ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).length,0);
-  const aprov=ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).filter(c=>c.status==='aprovada').length,0);
-  return`
-  <div class="page-header">
-    <div class="ph-badge">Revisão Coletiva</div>
+// ── CLÁUSULAS (privado) ─────────────────────────────────────────────────────
+function renderClausulas(){
+  if(!CURRENT_USER) return semLogin();
+  const totalC = ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).length,0);
+  const aprov  = ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).filter(c=>c.status==='aprovada').length,0);
+  return `
+  <div class="page-hd">
+    <div class="ph-badge">Revisão Coletiva da Equipe</div>
     <h2 class="ph-title">⚖️ Cláusulas Jurídicas por Eixo</h2>
-    <p class="ph-sub">${aprov} de ${totalC} cláusulas aprovadas · Revise, proponha alterações e vote</p>
+    <p class="ph-sub">${aprov} de ${totalC} aprovadas</p>
   </div>
   ${ST.eixos.map((e,ei)=>`
-  <div class="eixo-bloco" id="eb_${e.id}">
-    <div class="eixo-header" onclick="togEixo('${e.id}')" style="--ec:${e.cor}">
-      <div class="eh-left">
-        <span class="eh-icon">${e.icon||'⚖️'}</span>
-        <div>
-          <div class="eh-titulo">${e.titulo}</div>
-          <div class="eh-sub">${e.sub}</div>
-        </div>
+  <div class="eixo-bloco">
+    <div class="eixo-hd" onclick="togE('${e.id}')" style="border-left:6px solid ${e.cor}">
+      <div class="eh-l"><span style="font-size:1.4rem">${e.icon}</span>
+        <div><div class="eh-tit">${e.titulo}</div><div class="eh-sub">${e.sub}</div></div>
       </div>
-      <div class="eh-right">
-        ${(e.clausulas||[]).filter(c=>c.prioridade==='urgente').length>0?`<span class="tag-urg">🚨 ${(e.clausulas||[]).filter(c=>c.prioridade==='urgente').length} urgente(s)</span>`:''}
+      <div class="eh-r">
+        ${(e.clausulas||[]).filter(c=>c.prioridade==='urgente').length>0?`<span class="tag-urg">🚨 ${(e.clausulas||[]).filter(c=>c.prioridade==='urgente').length}</span>`:''}
         <span class="eh-cnt" style="color:${e.cor}">${(e.clausulas||[]).filter(c=>c.status==='aprovada').length}/${(e.clausulas||[]).length}</span>
-        <span class="eh-tog" id="et_${e.id}">▼</span>
+        <span id="et_${e.id}">▼</span>
       </div>
     </div>
     <div class="eixo-corpo" id="ec_${e.id}" style="display:none">
       ${(e.clausulas||[]).map((c,ci)=>`
-      <div class="clausula-card ${c.status}" id="cc_${c.id}">
-        <div class="cc-header">
+      <div class="cc ${c.status}">
+        <div class="cc-hd">
           <div class="cc-num" style="background:${e.cor}">${ei+1}.${ci+1}</div>
           <div class="cc-tags">
             <span class="ctag" style="background:${TIPO_COR[c.tipo]||'#999'}">${TIPO_LABEL[c.tipo]||c.tipo}</span>
-            <span class="ctag prior-${c.prioridade}">${c.prioridade}</span>
+            <span class="ctag" style="background:${PRIOR_COR[c.prioridade]||'#999'}">${c.prioridade}</span>
           </div>
-          <div class="cc-status">
-            ${IS_ADMIN?`<select class="st-sel" onchange="window.setClausulaStatus('${e.id}','${c.id}',this.value)" style="border-color:${STATUS_COR[c.status]||'#999'}">
-              <option value="proposta" ${c.status==='proposta'?'selected':''}>Proposta</option>
-              <option value="revisao" ${c.status==='revisao'?'selected':''}>Em revisão</option>
-              <option value="aprovada" ${c.status==='aprovada'?'selected':''}>Aprovada</option>
-              <option value="vetada" ${c.status==='vetada'?'selected':''}>Vetada</option>
-            </select>`:`<span class="st-badge st-${c.status}">${c.status}</span>`}
+          <div class="cc-st">
+            ${IS_ADMIN
+              ?`<select class="st-sel" onchange="window.setStatus('${e.id}','${c.id}',this.value)">
+                  <option value="proposta" ${c.status==='proposta'?'selected':''}>Proposta</option>
+                  <option value="revisao" ${c.status==='revisao'?'selected':''}>Em revisão</option>
+                  <option value="aprovada" ${c.status==='aprovada'?'selected':''}>Aprovada</option>
+                  <option value="vetada" ${c.status==='vetada'?'selected':''}>Vetada</option>
+                </select>`
+              :`<span class="st-badge st-${c.status}">${c.status}</span>`}
           </div>
-          <div class="cc-actions">
-            ${IS_ADMIN?`<button class="cc-btn edit" title="Editar" onclick="window.editClausula('${e.id}','${c.id}')">✏️</button>
-            <button class="cc-btn del" title="Remover" onclick="window.delClausula('${e.id}','${c.id}')">🗑️</button>`:''}
-            <button class="cc-btn prop" title="Propor alteração" onclick="window.novaProposta('${e.id}','${c.id}')">💬</button>
+          <div class="cc-btns">
+            ${IS_ADMIN?`<button class="ic-btn" onclick="window.editClausula('${e.id}','${c.id}')" title="Editar">✏️</button>
+            <button class="ic-btn" onclick="window.delClausula('${e.id}','${c.id}')" title="Remover">🗑️</button>`:''}
+            <button class="ic-btn prop-btn" onclick="window.novaProposta('${e.id}','${c.id}')" title="Propor alteração">💬</button>
           </div>
         </div>
         <p class="cc-texto">${c.texto}</p>
-        ${(ST.propostas||[]).filter(p=>p.clausulaId===c.id&&p.status==='aberta').length>0?`
-        <div class="cc-props-badge">💬 ${(ST.propostas||[]).filter(p=>p.clausulaId===c.id&&p.status==='aberta').length} proposta(s) em aberto</div>`:''}
       </div>`).join('')}
-      ${IS_ADMIN?`
-      <div class="add-clausula-row">
-        <button class="btn-add-clausula" onclick="window.addClausula('${e.id}')">+ Nova cláusula neste eixo</button>
-      </div>`:''}
+      ${IS_ADMIN?`<div class="add-c-row"><button class="btn-add-c" onclick="window.addClausula('${e.id}')">+ Nova cláusula</button></div>`:''}
     </div>
   </div>`).join('')}`;
 }
 
 // ── SIGNATÁRIOS ────────────────────────────────────────────────────────────
 function renderSignatarios(){
-  const conf=ST.signatarios.filter(s=>s.status==='confirmado');
-  const pend=ST.signatarios.filter(s=>s.status==='pendente');
-  const conv=ST.signatarios.filter(s=>s.status==='convidado');
-  return`
-  <div class="page-header">
+  if(!CURRENT_USER) return semLogin();
+  const conf = (ST.signatarios||[]).filter(s=>s.status==='confirmado');
+  const pend = (ST.signatarios||[]).filter(s=>s.status==='pendente');
+  return `
+  <div class="page-hd">
     <div class="ph-badge">Gestão de Adesões</div>
     <h2 class="ph-title">✍️ Signatários</h2>
-    <p class="ph-sub">${conf.length} confirmados · ${pend.length} pendentes · ${conv.length} convidados</p>
-    ${IS_ADMIN?`<button class="btn-primary" onclick="window.addSignatario()">+ Novo signatário</button>`:''}
+    <p class="ph-sub">${conf.length} confirmados · ${pend.length} pendentes</p>
+    ${IS_ADMIN?`<button class="btn-primary" onclick="window.addSig()">+ Novo</button>`:''}
   </div>
-
-  ${conf.length>0?`<div class="sig-section-title"><span style="color:#1a6b2e">✅ Confirmados (${conf.length})</span></div>
-  <div class="sig-grid">
-    ${conf.map(s=>renderSigCard(s,'confirmado')).join('')}
-  </div>`:''}
-
-  ${pend.length>0?`<div class="sig-section-title"><span style="color:#d4890a">⏳ Pendentes (${pend.length})</span></div>
-  <div class="sig-grid">
-    ${pend.map(s=>renderSigCard(s,'pendente')).join('')}
-  </div>`:''}
-
-  ${conv.length>0?`<div class="sig-section-title"><span style="color:#0d5c8f">📧 Convidados (${conv.length})</span></div>
-  <div class="sig-grid">
-    ${conv.map(s=>renderSigCard(s,'convidado')).join('')}
-  </div>`:''}
-
-  ${ST.signatarios.length===0?`<div class="empty-state">Nenhum signatário cadastrado ainda.</div>`:''}
-
-  <div class="sig-tipos-ref">
-    <div class="sig-ref-title">📋 Tipos de signatário esperados para a COP Pantanal II</div>
-    <div class="sig-ref-grid">
-      <div class="sig-ref-item">🏛️ Prefeituras municipais da bacia do Rio Paraguai</div>
-      <div class="sig-ref-item">🎓 Universidades e institutos de pesquisa (UNEMAT, UFMT, INPA...)</div>
-      <div class="sig-ref-item">🌿 ONGs e organizações da sociedade civil</div>
-      <div class="sig-ref-item">👥 Associações de povos tradicionais e indígenas</div>
-      <div class="sig-ref-item">🏫 Secretarias municipais e estaduais de meio ambiente</div>
-      <div class="sig-ref-item">🌍 Organismos internacionais (UNESCO, PNUMA...)</div>
-      <div class="sig-ref-item">🏭 Empresas com comprometimento socioambiental verificado</div>
-      <div class="sig-ref-item">📰 Veículos de comunicação e jornalismo ambiental</div>
-    </div>
-  </div>`;
+  ${conf.length>0?`<div class="sig-sec-tit" style="color:#1a6b2e">✅ Confirmados (${conf.length})</div>
+  <div class="sig-grid">${conf.map(s=>sigCard(s)).join('')}</div>`:''}
+  ${pend.length>0?`<div class="sig-sec-tit" style="color:#d4890a">⏳ Pendentes (${pend.length})</div>
+  <div class="sig-grid">${pend.map(s=>sigCard(s)).join('')}</div>`:''}
+  ${(ST.signatarios||[]).length===0?'<div class="empty-state">Nenhum signatário cadastrado.</div>':''}`;
 }
-
-function renderSigCard(s,status){
-  const bc={confirmado:'#1a6b2e',pendente:'#d4890a',convidado:'#0d5c8f'}[status]||'#999';
-  return`<div class="sig-card" style="--sc:${bc}">
-    <div class="sc-head">
-      <div class="sc-nome">${s.nome}</div>
-      <span class="sc-status" style="background:${bc}">${status}</span>
-    </div>
+function sigCard(s){
+  const bc = {confirmado:'#1a6b2e',pendente:'#d4890a',convidado:'#0d5c8f'}[s.status]||'#999';
+  return `<div class="sig-card" style="border-top:4px solid ${bc}">
+    <div class="sc-hd"><div class="sc-nome">${s.nome}</div><span class="sc-st" style="background:${bc}">${s.status}</span></div>
     <div class="sc-tipo">${s.tipo}</div>
-    <div class="sc-meta">📍 ${s.municipio}${s.representante?' · 👤 '+s.representante:''}${s.data?' · 📅 '+fmtDate(s.data):''}</div>
-    ${IS_ADMIN?`<div class="sc-actions">
-      <button class="sc-btn" onclick="window.editSig('${s.id}')">✏️ Editar</button>
-      ${status==='pendente'?`<button class="sc-btn green" onclick="window.confirmSig('${s.id}')">✅ Confirmar</button>`:''}
+    <div class="sc-meta">📍 ${s.municipio}${s.representante?' · 👤 '+s.representante:''}${s.data?' · '+fmtDate(s.data):''}</div>
+    ${IS_ADMIN?`<div class="sc-btns">
+      <button class="sc-btn" onclick="window.editSig('${s.id}')">✏️</button>
+      ${s.status==='pendente'?`<button class="sc-btn green" onclick="window.confirmSig('${s.id}')">✅ Confirmar</button>`:''}
       <button class="sc-btn red" onclick="window.delSig('${s.id}')">🗑️</button>
     </div>`:''}
   </div>`;
@@ -497,526 +544,538 @@ function renderSigCard(s,status){
 
 // ── PROPOSTAS ──────────────────────────────────────────────────────────────
 function renderPropostas(){
-  const abertas=(ST.propostas||[]).filter(p=>p.status==='aberta');
-  const resolvidas=(ST.propostas||[]).filter(p=>p.status!=='aberta');
-  return`
-  <div class="page-header">
-    <div class="ph-badge">Participação Coletiva</div>
+  if(!CURRENT_USER) return semLogin();
+  const abertas  = (ST.propostas||[]).filter(p=>p.status==='aberta');
+  const outras   = (ST.propostas||[]).filter(p=>p.status!=='aberta');
+  return `
+  <div class="page-hd">
+    <div class="ph-badge">Participação da Equipe</div>
     <h2 class="ph-title">💬 Propostas de Alteração</h2>
-    <p class="ph-sub">${abertas.length} em aberto · ${resolvidas.length} resolvidas</p>
+    <p class="ph-sub">${abertas.length} em aberto · ${outras.length} resolvidas</p>
   </div>
-
-  ${abertas.length>0?`<div class="sig-section-title"><span style="color:#d4890a">⏳ Em aberto (${abertas.length})</span></div>
-  ${abertas.map(p=>renderPropostaCard(p)).join('')}`:'<div class="empty-state">Nenhuma proposta em aberto.</div>'}
-
-  ${resolvidas.length>0?`<div class="sig-section-title"><span style="color:#9ca3af">Resolvidas (${resolvidas.length})</span></div>
-  ${resolvidas.map(p=>renderPropostaCard(p)).join('')}`:''}`;
+  ${abertas.length>0?abertas.map(p=>propCard(p)).join(''):'<div class="empty-state">Nenhuma proposta em aberto.</div>'}
+  ${outras.length>0?`<div class="sig-sec-tit" style="color:#9ca3af;margin-top:24px">Resolvidas (${outras.length})</div>${outras.map(p=>propCard(p)).join('')}`:''}`;
 }
-
-function renderPropostaCard(p){
-  const eixo=ST.eixos.find(e=>(e.clausulas||[]).find(c=>c.id===p.clausulaId));
-  const clausula=eixo&&(eixo.clausulas||[]).find(c=>c.id===p.clausulaId);
-  return`<div class="prop-card prop-${p.status}">
-    <div class="prop-head">
-      <div class="prop-meta">
-        <span class="prop-user">${p.user}</span>
-        <span class="prop-ts">${fmt(p.ts)}</span>
-        <span class="prop-ref">${eixo?eixo.titulo:'?'}</span>
-      </div>
-      <span class="prop-status-tag ${p.status}">${p.status}</span>
+function propCard(p){
+  const eixo = ST.eixos.find(e=>(e.clausulas||[]).find(c=>c.id===p.clausulaId));
+  const cla  = eixo&&(eixo.clausulas||[]).find(c=>c.id===p.clausulaId);
+  return `<div class="prop-card prop-${p.status}">
+    <div class="prop-hd">
+      <div><span class="prop-user">${p.user}</span><span class="prop-ts">${fmt(p.ts)}</span><span class="prop-ref">${eixo?eixo.titulo.split('—')[0].trim():''}</span></div>
+      <span class="prop-st prop-st-${p.status}">${p.status}</span>
     </div>
-    ${clausula?`<div class="prop-original"><strong>Cláusula original:</strong> ${clausula.texto.slice(0,120)}...</div>`:''}
-    <div class="prop-texto"><strong>Proposta:</strong> ${p.texto}</div>
-    ${IS_ADMIN&&p.status==='aberta'?`<div class="prop-actions">
-      <button class="prop-btn accept" onclick="window.aceitarProposta('${p.id}')">✅ Aceitar e aplicar</button>
-      <button class="prop-btn reject" onclick="window.rejeitarProposta('${p.id}')">❌ Rejeitar</button>
+    ${cla?`<div class="prop-orig">Cláusula original: ${cla.texto.slice(0,100)}...</div>`:''}
+    <div class="prop-txt"><strong>Proposta:</strong> ${p.texto}</div>
+    ${IS_ADMIN&&p.status==='aberta'?`<div class="prop-btns">
+      <button class="prop-btn-ok" onclick="window.aceitarP('${p.id}')">✅ Aceitar e aplicar</button>
+      <button class="prop-btn-no" onclick="window.rejeitarP('${p.id}')">❌ Rejeitar</button>
     </div>`:''}
   </div>`;
 }
 
 // ── ADMIN ──────────────────────────────────────────────────────────────────
 function renderAdmin(){
-  if(!IS_ADMIN)return`<div class="page-header"><h2>Acesso negado</h2></div>`;
-  const total=ST.eixos.reduce((a,e)=>a+(e.clausulas||[]).length,0);
-  const sigs=ST.signatarios.length;
-  const props=(ST.propostas||[]).length;
-  const logs=ST.log.length;
-  return`
-  <div class="page-header">
+  if(!IS_ADMIN) return `<div class="page-hd"><h2>Acesso restrito.</h2></div>`;
+  return `
+  <div class="page-hd">
     <div class="ph-badge">Administração</div>
     <h2 class="ph-title">⚙️ Painel Admin</h2>
-    <p class="ph-sub">Gestão completa do instrumento jurídico</p>
   </div>
-
   <div class="admin-grid">
-    <div class="admin-section">
-      <div class="admin-sec-title">📜 Instrumento</div>
+    <div class="admin-sec">
+      <div class="admin-sec-tit">📜 Instrumento</div>
       <button class="admin-btn" onclick="window.editInst()">Editar título e preâmbulo</button>
-      <button class="admin-btn" onclick="window.editFundamentacao()">Editar fundamentação legal</button>
-      <button class="admin-btn warn" onclick="window.gerarPDF()">🖨️ Gerar versão para impressão</button>
+      <button class="admin-btn" onclick="window.editFund()">Editar fundamentação legal</button>
+      <button class="admin-btn" onclick="window.alterarStatus()">Alterar status (rascunho → final)</button>
     </div>
-    <div class="admin-section">
-      <div class="admin-sec-title">⚖️ Cláusulas</div>
-      <div class="admin-stats">${total} cláusulas em ${ST.eixos.length} eixos</div>
-      ${ST.eixos.map(e=>`<button class="admin-btn" onclick="window.setView('eixos')" style="border-left:4px solid ${e.cor}">${e.titulo.slice(0,35)}...</button>`).join('')}
+    <div class="admin-sec">
+      <div class="admin-sec-tit">✍️ Signatários</div>
+      <button class="admin-btn" onclick="window.addSig()">+ Adicionar signatário</button>
+      <button class="admin-btn" onclick="window.exportSigs()">📤 Exportar lista TXT</button>
+      <button class="admin-btn" onclick="setV('signatarios')">Ver todos</button>
     </div>
-    <div class="admin-section">
-      <div class="admin-sec-title">✍️ Signatários</div>
-      <div class="admin-stats">${sigs} cadastrados · ${ST.signatarios.filter(s=>s.status==='confirmado').length} confirmados</div>
-      <button class="admin-btn" onclick="window.addSignatario()">+ Adicionar signatário</button>
-      <button class="admin-btn" onclick="window.exportSignatarios()">📤 Exportar lista</button>
+    <div class="admin-sec">
+      <div class="admin-sec-tit">📧 Adesões pendentes</div>
+      <div style="font-size:.82rem;color:#6b7280;margin-bottom:10px">${(ST.signatarios||[]).filter(s=>s.status==='pendente').length} aguardando confirmação</div>
+      <button class="admin-btn" onclick="setV('signatarios')">Revisar adesões</button>
     </div>
-    <div class="admin-section">
-      <div class="admin-sec-title">💬 Propostas</div>
-      <div class="admin-stats">${props} propostas · ${(ST.propostas||[]).filter(p=>p.status==='aberta').length} em aberto</div>
-      <button class="admin-btn" onclick="window.setView('propostas')">Ver todas as propostas</button>
+    <div class="admin-sec">
+      <div class="admin-sec-tit">🗓️ Estrutura COP II por Eixos</div>
+      <p style="font-size:.8rem;color:#6b7280;line-height:1.6;margin-bottom:10px">5 subeventos simultâneos, um por eixo, com auditório próprio e atores específicos. Plenária de convergência ao final.</p>
+      <button class="admin-btn" onclick="window.gerarEstrutura()">Ver estrutura do evento</button>
     </div>
-    <div class="admin-section">
-      <div class="admin-sec-title">🗄️ Dados</div>
-      <div class="admin-stats">${logs} entradas no registro</div>
-      <button class="admin-btn" onclick="window.expJSON()">⬇️ Exportar JSON completo</button>
-      <button class="admin-btn warn" onclick="window.resetConfirm()">⚠️ Reset dados (CUIDADO)</button>
+    <div class="admin-sec">
+      <div class="admin-sec-tit">🗄️ Dados</div>
+      <button class="admin-btn" onclick="window.expJSON()">⬇️ Exportar JSON</button>
+      <button class="admin-btn warn" onclick="window.resetDB()">⚠️ Reset banco (cuidado)</button>
     </div>
-    <div class="admin-section">
-      <div class="admin-sec-title">🗓️ COP II — Estrutura por Eixos</div>
-      <p style="font-size:.82rem;color:#6b7280;line-height:1.6">Cada eixo terá um subevento com auditório próprio, atores sociais específicos, facilitador temático e relator. Plenária de convergência ao final.</p>
-      <button class="admin-btn" onclick="window.gerarEstruturaCOP()">Gerar estrutura do evento</button>
+    <div class="admin-sec">
+      <div class="admin-sec-tit">👥 Equipe</div>
+      <div style="font-size:.82rem;color:#6b7280;line-height:1.8">
+        ${ADMINS.map(e=>`<div>✅ ${e}</div>`).join('')}
+      </div>
     </div>
   </div>`;
 }
 
 // ── LOG ────────────────────────────────────────────────────────────────────
 function renderLog(){
-  return`
-  <div class="page-header">
+  if(!CURRENT_USER) return semLogin();
+  return `
+  <div class="page-hd">
     <div class="ph-badge">Auditoria</div>
     <h2 class="ph-title">📋 Registro de Ações</h2>
-    <p class="ph-sub">${ST.log.length} entradas registradas</p>
+    <p class="ph-sub">${ST.log.length} entradas</p>
   </div>
-  ${ST.log.length===0?`<div class="empty-state">Nenhuma ação registrada ainda.</div>`:
+  ${ST.log.length===0?'<div class="empty-state">Nenhuma ação registrada.</div>':
     ST.log.map(l=>`<div class="log-item">
-      <div class="log-meta"><span class="log-user">${l.user||'?'}</span><span class="log-ts">${fmt(l.ts)}</span></div>
-      <div class="log-acao">${l.acao}</div>
-      ${l.detalhe?`<div class="log-det">${l.detalhe}</div>`:''}
+      <div class="log-meta"><span class="log-u">${l.user||'?'}</span><span class="log-ts">${fmt(l.ts)}</span></div>
+      <div class="log-a">${l.acao}</div>
+      ${l.detalhe?`<div class="log-d">${l.detalhe}</div>`:''}
     </div>`).join('')}`;
 }
+function semLogin(){
+  return `<div class="sem-login">
+    <div style="font-size:2.5rem;margin-bottom:16px">🔐</div>
+    <h3>Área restrita à equipe</h3>
+    <p>Esta seção requer login com Google.</p>
+    <button class="btn-google-login" onclick="loginGoogle()" style="margin-top:16px"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Entrar com Google</button>
+  </div>`;
+}
 
-// ── ACTIONS ────────────────────────────────────────────────────────────────
-window.doLogin=function(name,role,bg){
-  USER=name;IS_ADMIN=(role==='admin');
-  addLog("Login",name+" ("+role+")");
-  fbLoad().then(()=>{VIEW='home';render();});
+// ── WINDOW ACTIONS ─────────────────────────────────────────────────────────
+window.setV = function(v){ VIEW=v; render(); window.scrollTo(0,0); };
+window.salvar = async function(){ addLog("Salvo","manual"); await fbSave(); toast("Salvo!"); };
+window.togE = function(id){
+  const b=document.getElementById('ec_'+id), t=document.getElementById('et_'+id);
+  if(!b)return; const op=b.style.display!=='none';
+  b.style.display=op?'none':'block'; if(t)t.textContent=op?'▼':'▲';
 };
-window.doLogout=function(){USER=null;IS_ADMIN=false;VIEW='home';render();};
-window.setView=function(v){VIEW=v;render();};
-window.salvar=async function(){addLog("Salvamento manual","por "+USER);await fbSave();toast("Salvo no Firebase!");};
-
-window.togEixo=function(id){
-  const b=document.getElementById('ec_'+id),t=document.getElementById('et_'+id);
-  if(!b)return;const op=b.style.display!=='none';
-  b.style.display=op?'none':'block';if(t)t.textContent=op?'▼':'▲';
+window.setStatus = async function(eid,cid,val){
+  const e=ST.eixos.find(x=>x.id===eid); if(!e)return;
+  const c=(e.clausulas||[]).find(x=>x.id===cid); if(!c)return;
+  c.status=val; addLog("Status alterado",`→ ${val}`);
+  await fbSave(); toast("Status: "+val); render();
+  const b=document.getElementById('ec_'+eid); if(b)b.style.display='block';
 };
-
-window.setClausulaStatus=async function(eid,cid,val){
-  const e=ST.eixos.find(x=>x.id===eid);if(!e)return;
-  const c=(e.clausulas||[]).find(x=>x.id===cid);if(!c)return;
-  c.status=val;
-  addLog("Status de cláusula alterado",`${c.texto.slice(0,60)} → ${val}`);
-  await fbSave();toast(`Cláusula marcada como: ${val}`);
+window.editClausula = function(eid,cid){
+  const e=ST.eixos.find(x=>x.id===eid); if(!e)return;
+  const c=(e.clausulas||[]).find(x=>x.id===cid); if(!c)return;
+  const nt=prompt("Editar texto:",c.texto); if(!nt||!nt.trim())return;
+  c.texto=nt.trim(); addLog("Cláusula editada",nt.slice(0,60));
+  fbSave().then(()=>{render(); toast("Atualizada");});
 };
-
-window.editClausula=function(eid,cid){
-  const e=ST.eixos.find(x=>x.id===eid);if(!e)return;
-  const c=(e.clausulas||[]).find(x=>x.id===cid);if(!c)return;
-  const nt=prompt("Editar texto da cláusula:",c.texto);
-  if(!nt||!nt.trim())return;
-  c.texto=nt.trim();addLog("Cláusula editada",nt.slice(0,80));
-  fbSave().then(()=>{render();toast("Cláusula atualizada");});
-};
-
-window.delClausula=async function(eid,cid){
+window.delClausula = async function(eid,cid){
   if(!confirm("Remover esta cláusula?"))return;
-  const e=ST.eixos.find(x=>x.id===eid);if(!e)return;
-  const c=(e.clausulas||[]).find(x=>x.id===cid);
-  addLog("Cláusula removida",c?c.texto.slice(0,60):cid);
+  const e=ST.eixos.find(x=>x.id===eid); if(!e)return;
+  addLog("Cláusula removida",cid);
   e.clausulas=(e.clausulas||[]).filter(x=>x.id!==cid);
-  await fbSave();render();toast("Removida");
+  await fbSave(); render(); toast("Removida");
 };
-
-window.addClausula=async function(eid){
-  const e=ST.eixos.find(x=>x.id===eid);if(!e)return;
-  const texto=prompt("Texto da nova cláusula:");if(!texto||!texto.trim())return;
-  const tipo=prompt("Tipo (obrigacao/compromisso/declaracao):")||"compromisso";
-  const prior=prompt("Prioridade (urgente/alta/media):")||"alta";
+window.addClausula = async function(eid){
+  const e=ST.eixos.find(x=>x.id===eid); if(!e)return;
+  const texto=prompt("Texto da nova cláusula:"); if(!texto||!texto.trim())return;
+  const tipo=prompt("Tipo (obrigacao / compromisso / declaracao):")||"compromisso";
+  const prior=prompt("Prioridade (urgente / alta / media):")||"alta";
   if(!e.clausulas)e.clausulas=[];
-  e.clausulas.push({id:'c_'+Date.now(),tipo,texto:texto.trim(),prioridade:prior,status:'proposta'});
-  addLog("Nova cláusula",texto.slice(0,80));await fbSave();render();toast("Cláusula adicionada!");
+  e.clausulas.push({id:'c_'+Date.now(),tipo:tipo.trim(),texto:texto.trim(),prioridade:prior.trim(),status:'proposta'});
+  addLog("Cláusula adicionada",texto.slice(0,60));
+  await fbSave(); render(); toast("Adicionada!");
 };
-
-window.novaProposta=function(eid,cid){
-  const texto=prompt("Sua proposta de alteração para esta cláusula:");
-  if(!texto||!texto.trim())return;
+window.novaProposta = function(eid,cid){
+  const texto=prompt("Sua proposta de alteração para esta cláusula:"); if(!texto||!texto.trim())return;
   if(!ST.propostas)ST.propostas=[];
-  ST.propostas.unshift({id:'p_'+Date.now(),eixoId:eid,clausulaId:cid,user:USER,ts:new Date().toISOString(),texto:texto.trim(),status:'aberta'});
-  addLog("Nova proposta",texto.slice(0,80));fbSave().then(()=>{render();toast("Proposta enviada!");});
+  ST.propostas.unshift({id:'p_'+Date.now(),eixoId:eid,clausulaId:cid,user:CURRENT_USER.displayName||CURRENT_USER.email,ts:new Date().toISOString(),texto:texto.trim(),status:'aberta'});
+  addLog("Proposta enviada",texto.slice(0,60));
+  fbSave().then(()=>{render(); toast("Proposta enviada!");});
 };
-
-window.aceitarProposta=async function(pid){
-  const p=(ST.propostas||[]).find(x=>x.id===pid);if(!p)return;
+window.aceitarP = async function(pid){
+  const p=(ST.propostas||[]).find(x=>x.id===pid); if(!p)return;
   const e=ST.eixos.find(x=>x.id===p.eixoId);
   const c=e&&(e.clausulas||[]).find(x=>x.id===p.clausulaId);
-  if(c){c.texto=p.texto;c.status='revisao';}
-  p.status='aceita';addLog("Proposta aceita e aplicada",p.texto.slice(0,80));
-  await fbSave();render();toast("Proposta aplicada!");
+  if(c){ c.texto=p.texto; c.status='revisao'; }
+  p.status='aceita'; addLog("Proposta aceita",p.texto.slice(0,60));
+  await fbSave(); render(); toast("Proposta aplicada!");
 };
-window.rejeitarProposta=async function(pid){
-  const p=(ST.propostas||[]).find(x=>x.id===pid);if(!p)return;
-  p.status='rejeitada';addLog("Proposta rejeitada","");
-  await fbSave();render();toast("Proposta rejeitada");
+window.rejeitarP = async function(pid){
+  const p=(ST.propostas||[]).find(x=>x.id===pid); if(!p)return;
+  p.status='rejeitada'; addLog("Proposta rejeitada","");
+  await fbSave(); render(); toast("Rejeitada");
 };
-
-window.addSignatario=function(){
-  const nome=prompt("Nome da instituição/pessoa:");if(!nome||!nome.trim())return;
-  const tipo=prompt("Tipo (ex: Prefeitura Municipal, Universidade, ONG...):")||"";
-  const municipio=prompt("Município-UF:")|| "Cáceres-MT";
+window.addSig = function(){
+  const nome=prompt("Nome da instituição/pessoa:"); if(!nome||!nome.trim())return;
+  const tipo=prompt("Tipo:")||"";
+  const mun=prompt("Município-UF:")||"Cáceres-MT";
   const rep=prompt("Representante (opcional):")||"";
-  ST.signatarios.push({id:'sig_'+Date.now(),nome:nome.trim(),tipo:tipo.trim(),municipio:municipio.trim(),representante:rep.trim(),status:'pendente',data:''});
-  addLog("Signatário adicionado",nome);fbSave().then(()=>{render();toast("Signatário adicionado!");});
+  const email=prompt("E-mail (opcional):")||"";
+  ST.signatarios.push({id:'sig_'+Date.now(),nome:nome.trim(),tipo:tipo.trim(),municipio:mun.trim(),representante:rep.trim(),email:email.trim(),status:'pendente',data:''});
+  addLog("Signatário adicionado",nome);
+  fbSave().then(()=>{render(); toast("Adicionado!");});
 };
-window.confirmSig=async function(sid){
-  const s=ST.signatarios.find(x=>x.id===sid);if(!s)return;
-  s.status='confirmado';s.data=new Date().toISOString().slice(0,10);
-  addLog("Signatário confirmado",s.nome);await fbSave();render();toast("Confirmado!");
+window.confirmSig = async function(sid){
+  const s=ST.signatarios.find(x=>x.id===sid); if(!s)return;
+  s.status='confirmado'; s.data=new Date().toISOString().slice(0,10);
+  addLog("Signatário confirmado",s.nome);
+  await fbSave(); render(); toast("Confirmado!");
 };
-window.editSig=function(sid){
-  const s=ST.signatarios.find(x=>x.id===sid);if(!s)return;
-  const nn=prompt("Nome:",s.nome);if(!nn||!nn.trim())return;
+window.editSig = function(sid){
+  const s=ST.signatarios.find(x=>x.id===sid); if(!s)return;
+  const nn=prompt("Nome:",s.nome); if(!nn)return;
   s.nome=nn.trim();
-  const nr=prompt("Representante:",s.representante||"");s.representante=(nr||"").trim();
-  addLog("Signatário editado",s.nome);fbSave().then(()=>{render();toast("Atualizado");});
+  const nr=prompt("Representante:",s.representante||""); s.representante=(nr||"").trim();
+  addLog("Signatário editado",s.nome);
+  fbSave().then(()=>{render(); toast("Atualizado");});
 };
-window.delSig=async function(sid){
+window.delSig = async function(sid){
   if(!confirm("Remover signatário?"))return;
   const s=ST.signatarios.find(x=>x.id===sid);
   addLog("Signatário removido",s?s.nome:sid);
   ST.signatarios=ST.signatarios.filter(x=>x.id!==sid);
-  await fbSave();render();toast("Removido");
+  await fbSave(); render(); toast("Removido");
 };
-
-window.editInst=function(){
-  const t=prompt("Título:",ST.instrumento.titulo);if(!t)return;
+window.enviarAdesao = async function(){
+  const nome=document.getElementById('ad_nome')?.value?.trim();
+  const tipo=document.getElementById('ad_tipo')?.value;
+  const mun=document.getElementById('ad_municipio')?.value?.trim();
+  const rep=document.getElementById('ad_rep')?.value?.trim()||"";
+  const email=document.getElementById('ad_email')?.value?.trim()||"";
+  if(!nome||!tipo||!mun){ toast("Preencha os campos obrigatórios","warn"); return; }
+  ST.signatarios.push({id:'sig_'+Date.now(),nome,tipo,municipio:mun,representante:rep,email,status:'pendente',data:''});
+  addLog("Adesão pública",nome);
+  await fbSave();
+  toast("Manifestação enviada! A equipe irá analisar.");
+  ['ad_nome','ad_tipo','ad_municipio','ad_rep','ad_email'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+};
+window.editInst = function(){
+  const t=prompt("Título:",ST.instrumento.titulo); if(!t)return;
   ST.instrumento.titulo=t.trim();
-  const p=prompt("Preâmbulo:",ST.instrumento.preambulo);
-  if(p)ST.instrumento.preambulo=p.trim();
-  addLog("Instrumento editado","título e preâmbulo");fbSave().then(()=>{render();toast("Instrumento atualizado");});
+  const p=prompt("Preâmbulo:",ST.instrumento.preambulo); if(p)ST.instrumento.preambulo=p.trim();
+  addLog("Instrumento editado","");
+  fbSave().then(()=>{render(); toast("Atualizado");});
 };
-window.editFundamentacao=function(){
+window.editFund = function(){
   const atual=ST.instrumento.fundamentacao.join('\n');
-  const nova=prompt("Fundamentação (uma por linha):",atual);
-  if(!nova)return;
+  const nova=prompt("Fundamentação (uma por linha):",atual); if(!nova)return;
   ST.instrumento.fundamentacao=nova.split('\n').map(x=>x.trim()).filter(Boolean);
-  addLog("Fundamentação legal editada","");fbSave().then(()=>{render();toast("Fundamentação atualizada");});
+  addLog("Fundamentação editada","");
+  fbSave().then(()=>{render(); toast("Atualizada");});
 };
-
-window.gerarEstruturaCOP=function(){
-  const estrutura=ST.eixos.map(e=>`${e.titulo}\n- Auditório próprio\n- Atores específicos\n- Facilitador temático\n- Relator\n- Produto: contribuição ao documento final\n`).join('\n');
-  alert("ESTRUTURA COP PANTANAL II\n\n"+estrutura+"\n\nPlenária de Convergência: todos os relatores apresentam síntese coletiva.");
+window.alterarStatus = function(){
+  const novo=prompt("Novo status (rascunho/revisao/final):",ST.instrumento.status); if(!novo)return;
+  ST.instrumento.status=novo.trim();
+  addLog("Status do instrumento",novo);
+  fbSave().then(()=>{render(); toast("Status: "+novo);});
 };
-window.gerarPDF=function(){window.print();};
-window.expJSON=function(){
+window.gerarEstrutura = function(){
+  let txt = "ESTRUTURA COP PANTANAL II\n"+"=".repeat(40)+"\n\n";
+  ST.eixos.forEach(e=>{
+    txt += e.titulo+"\n";
+    txt += "  Auditório próprio\n  Atores sociais específicos\n  Facilitador temático\n  Relator\n  Produto: contribuição ao documento final\n\n";
+  });
+  txt += "PLENÁRIA DE CONVERGÊNCIA\nTodos os relatores apresentam síntese coletiva para aprovação final.";
+  alert(txt);
+};
+window.expJSON = function(){
   const b=new Blob([JSON.stringify(ST,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cop_pantanal_II.json';a.click();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='cop_pantanal_II.json'; a.click();
 };
-window.exportSignatarios=function(){
+window.exportSigs = function(){
   let txt="SIGNATÁRIOS — COP PANTANAL II\n"+"=".repeat(40)+"\n\n";
-  ST.signatarios.forEach(s=>{txt+=`${s.nome}\n${s.tipo} · ${s.municipio}\nStatus: ${s.status}${s.data?' · '+fmtDate(s.data):''}\n\n`;});
+  (ST.signatarios||[]).forEach(s=>{ txt+=`${s.nome}\n${s.tipo} · ${s.municipio}\nStatus: ${s.status}\n\n`; });
   const b=new Blob([txt],{type:'text/plain'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='signatarios.txt';a.click();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='signatarios.txt'; a.click();
 };
-window.resetConfirm=function(){if(confirm("ATENÇÃO: isso apagará todos os dados. Tem certeza?"))if(confirm("Confirme novamente para resetar."))fbSave().then(()=>toast("Reset feito","warn"));};
+window.resetDB = function(){
+  if(!confirm("Apagar TUDO?"))return;
+  if(!confirm("Tem certeza absoluta? Isso não tem volta."))return;
+  db.ref(BASE).remove().then(()=>{ toast("Banco resetado","warn"); });
+};
 
-document.addEventListener("DOMContentLoaded", function(){ render(); });
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function(){
+  render();
+});
 </script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --green:#1a6b2e;--green-l:#e8f5ee;--red:#c0392b;--blue:#0d5c8f;--gold:#d4890a;--purple:#6c3483;--teal:#1a7a6b;
-  --bg:#f8f9fa;--white:#ffffff;--border:#e5e7eb;--text:#1f2937;--muted:#6b7280;--light:#f3f4f6;
-  --font-display:'Cormorant Garamond',Georgia,serif;--font-body:'Outfit',sans-serif;--font-mono:'Space Mono',monospace;
+  --green:#1a6b2e;--gl:#e8f5ee;--red:#c0392b;--blue:#0d5c8f;--gold:#d4890a;--purple:#6c3483;
+  --bg:#f8f9fa;--white:#fff;--border:#e5e7eb;--text:#1f2937;--muted:#6b7280;--light:#f3f4f6;
+  --fd:'Cormorant Garamond',Georgia,serif;--fb:'Outfit',sans-serif;--fm:'Space Mono',monospace;
 }
-html{scroll-behavior:smooth}
-body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+body{font-family:var(--fb);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
 
-/* ── LOGIN ── */
-.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;background:#f0faf5;overflow:hidden}
-.login-bg-shapes{position:absolute;inset:0;pointer-events:none}
-.shape{position:absolute;border-radius:50%;opacity:.08}
-.shape.s1{width:600px;height:600px;background:var(--green);top:-200px;right:-150px}
-.shape.s2{width:400px;height:400px;background:var(--blue);bottom:-100px;left:-100px}
-.shape.s3{width:200px;height:200px;background:var(--gold);top:40%;right:10%}
-.login-card{position:relative;background:white;border-radius:24px;padding:48px 44px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.12),0 4px 16px rgba(0,0,0,.06);border:1px solid #e8f5ee}
-.login-badge{display:inline-block;background:var(--green);color:white;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.12em;padding:5px 12px;border-radius:20px;margin-bottom:20px}
-.login-title{font-family:var(--font-display);font-size:2.8rem;font-weight:700;line-height:1.1;color:var(--text);margin-bottom:12px}
-.login-title em{color:var(--green);font-style:italic}
-.login-desc{color:var(--muted);font-size:.9rem;line-height:1.6;margin-bottom:28px}
-.login-divider{display:flex;align-items:center;gap:12px;margin-bottom:24px}
-.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border)}
-.login-divider span{font-size:.75rem;color:var(--muted);font-weight:500;white-space:nowrap;text-transform:uppercase;letter-spacing:.08em}
-.login-users{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
-.login-user-btn{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid var(--border);border-radius:14px;background:white;cursor:pointer;transition:all .2s;text-align:left;font-family:var(--font-body)}
-.login-user-btn:hover{border-color:var(--green);background:var(--green-l);transform:translateX(4px)}
-.lu-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:.85rem;flex-shrink:0}
-.lu-info{flex:1}.lu-name{display:block;font-weight:600;font-size:.9rem;color:var(--text)}.lu-role{display:block;font-size:.75rem;color:var(--muted)}
-.lu-arr{font-size:1.1rem;color:var(--muted)}
-.login-footer{text-align:center;font-family:var(--font-display);font-style:italic;color:var(--muted);font-size:.9rem}
-
-/* ── NAV ── */
-.top-nav{display:flex;align-items:center;gap:0;background:white;border-bottom:1px solid var(--border);padding:0 24px;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.06)}
-.nav-brand{display:flex;align-items:center;gap:10px;padding-right:20px;border-right:1px solid var(--border);margin-right:16px;flex-shrink:0}
-.nav-leaf{font-size:1.4rem}
-.nav-title{font-family:var(--font-display);font-size:1rem;font-weight:700;line-height:1.1}
-.nav-sub{font-size:.65rem;color:var(--muted)}
-.nav-links{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto}
-.nav-link{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:.8rem;font-weight:500;color:var(--muted);text-decoration:none;white-space:nowrap;transition:all .15s}
-.nav-link:hover{color:var(--green);background:var(--green-l)}
-.nav-link.active{color:var(--green);background:var(--green-l);font-weight:600}
-.nav-right{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:auto;padding-left:16px;border-left:1px solid var(--border)}
-#pill{font-size:.68rem;font-family:var(--font-mono);padding:3px 8px;border-radius:20px;white-space:nowrap}
+/* NAV */
+.top-nav{display:flex;align-items:center;gap:0;background:var(--white);border-bottom:1px solid var(--border);padding:0 20px;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.nav-brand{display:flex;align-items:center;gap:9px;padding-right:18px;border-right:1px solid var(--border);margin-right:14px;flex-shrink:0}
+.nav-leaf{font-size:1.3rem}
+.nav-title{font-family:var(--fd);font-size:.98rem;font-weight:700;line-height:1.1}
+.nav-sub{font-size:.62rem;color:var(--muted)}
+.nav-links{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto;scrollbar-width:none}
+.nav-links::-webkit-scrollbar{display:none}
+.nav-link{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;font-size:.78rem;font-weight:500;color:var(--muted);text-decoration:none;white-space:nowrap;transition:all .15s;cursor:pointer}
+.nav-link:hover{color:var(--green);background:var(--gl)}
+.nav-link.active{color:var(--green);background:var(--gl);font-weight:700}
+.nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto;padding-left:14px;border-left:1px solid var(--border)}
+.nav-user-info{display:flex;align-items:center;gap:7px}
+.nav-foto{width:28px;height:28px;border-radius:50%;object-fit:cover}
+.nav-av{width:28px;height:28px;border-radius:50%;background:var(--green);color:white;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700}
+.nav-uname{font-size:.78rem;font-weight:500}
+.admin-badge{background:var(--red);color:white;font-size:.6rem;font-family:var(--fm);padding:2px 5px;border-radius:3px}
+#pill{font-size:.65rem;font-family:var(--fm);padding:3px 7px;border-radius:20px;white-space:nowrap}
 .pill.ok{background:#dcfce7;color:#166534}.pill.warn{background:#fef9c3;color:#854d0e}.pill.err{background:#fee2e2;color:#991b1b}
-.nav-user{display:flex;align-items:center;gap:8px}
-.nav-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:.72rem;flex-shrink:0}
-.nav-name{font-size:.8rem;font-weight:500;color:var(--text)}
-.admin-badge{background:var(--red);color:white;font-size:.62rem;font-family:var(--font-mono);padding:2px 6px;border-radius:4px;letter-spacing:.06em}
-.btn-save{border:1.5px solid var(--green);background:white;color:var(--green);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:.9rem;font-family:var(--font-body);transition:all .15s}
+.btn-save{border:1.5px solid var(--green);background:white;color:var(--green);border-radius:7px;padding:4px 9px;cursor:pointer;font-size:.88rem;transition:all .15s}
 .btn-save:hover{background:var(--green);color:white}
-.btn-logout{border:1.5px solid var(--border);background:white;color:var(--muted);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:.78rem;font-family:var(--font-body);transition:all .15s}
+.btn-logout{border:1.5px solid var(--border);background:white;color:var(--muted);border-radius:7px;padding:4px 9px;cursor:pointer;font-size:.75rem;font-family:var(--fb);transition:all .15s}
 .btn-logout:hover{background:var(--light);color:var(--text)}
+.btn-google-login{display:inline-flex;align-items:center;gap:8px;background:white;border:1.5px solid var(--border);border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:var(--fb);transition:all .15s;color:var(--text)}
+.btn-google-login:hover{border-color:#aaa;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 
-/* ── LAYOUT ── */
-.main-content{max-width:1100px;margin:0 auto;padding:28px 24px 80px}
+/* LAYOUT */
+.main-content{max-width:1060px;margin:0 auto;padding:26px 20px 80px}
 
-/* ── PAGE HEADER ── */
-.page-header{margin-bottom:28px;position:relative}
-.ph-badge{display:inline-block;background:var(--green-l);color:var(--green);font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:20px;margin-bottom:8px}
-.ph-title{font-family:var(--font-display);font-size:2rem;font-weight:700;color:var(--text);margin-bottom:6px}
-.ph-sub{color:var(--muted);font-size:.9rem}
-.btn-edit-inst,.btn-primary,.btn-outline{padding:9px 18px;border-radius:10px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:all .15s;border:none;margin-top:12px;display:inline-block}
-.btn-primary{background:var(--green);color:white}
+/* BOTÕES GERAIS */
+.btn-primary{background:var(--green);color:white;border:none;border-radius:9px;padding:9px 18px;font-size:.83rem;font-weight:600;cursor:pointer;font-family:var(--fb);transition:all .15s}
 .btn-primary:hover{background:#145524}
-.btn-outline{background:white;color:var(--green);border:2px solid var(--green)}
-.btn-outline:hover{background:var(--green-l)}
-.btn-edit-inst{background:var(--gold);color:white}
+.btn-outline{background:white;color:var(--green);border:2px solid var(--green);border-radius:9px;padding:8px 16px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:var(--fb);transition:all .15s}
+.btn-outline:hover{background:var(--gl)}
+.btn-sm-edit{background:var(--gold);color:white;border:none;border-radius:7px;padding:6px 12px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:var(--fb)}
 
-/* ── HOME HERO ── */
-.home-hero{background:linear-gradient(135deg,#0a3d1a,#1a6b2e 50%,#1d5a2e);border-radius:20px;padding:48px 44px;color:white;margin-bottom:28px;position:relative;overflow:hidden}
-.home-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;background:rgba(255,255,255,.05);border-radius:50%}
-.home-hero::after{content:'';position:absolute;bottom:-40px;left:20%;width:200px;height:200px;background:rgba(255,255,255,.04);border-radius:50%}
-.hero-eyebrow{font-size:.78rem;font-family:var(--font-mono);letter-spacing:.1em;opacity:.8;margin-bottom:16px}
-.hero-h1{font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);font-weight:700;line-height:1.05;margin-bottom:16px}
-.hero-h1 em{color:#9ef0b4;font-style:italic}
-.hero-lead{font-size:.95rem;opacity:.85;max-width:600px;line-height:1.7;margin-bottom:24px}
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+/* PAGE HEADER */
+.page-hd{margin-bottom:24px}
+.ph-badge{display:inline-block;background:var(--gl);color:var(--green);font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;margin-bottom:7px}
+.ph-title{font-family:var(--fd);font-size:1.9rem;font-weight:700;margin-bottom:4px}
+.ph-sub{color:var(--muted);font-size:.87rem}
 
-/* ── KPI GRID ── */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:32px}
-.kpi-card{background:white;border-radius:14px;padding:18px 16px;border-top:4px solid var(--kc,#1a6b2e);box-shadow:0 1px 6px rgba(0,0,0,.06);text-align:center;transition:transform .2s}
-.kpi-card:hover{transform:translateY(-2px)}
-.kpi-icon{font-size:1.4rem;margin-bottom:6px}
-.kpi-val{font-family:var(--font-display);font-size:2rem;font-weight:700;color:var(--kc,#1a6b2e);line-height:1}
-.kpi-label{font-size:.75rem;color:var(--muted);margin-top:4px;font-weight:500}
+/* HERO PÚBLICO */
+.pub-hero{background:linear-gradient(135deg,#072b13,#1a6b2e 55%,#1f7234);border-radius:18px;padding:44px 40px;color:white;margin-bottom:24px;position:relative;overflow:hidden}
+.pub-hero::before{content:'';position:absolute;top:-80px;right:-80px;width:320px;height:320px;background:rgba(255,255,255,.04);border-radius:50%}
+.pub-hero-badge{font-size:.72rem;font-family:var(--fm);letter-spacing:.1em;opacity:.8;margin-bottom:14px}
+.pub-hero-h1{font-family:var(--fd);font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;line-height:1.05;margin-bottom:14px}
+.pub-hero-h1 em{color:#9ef0b4;font-style:italic}
+.pub-hero-lead{font-size:.9rem;opacity:.85;max-width:580px;line-height:1.75;margin-bottom:22px}
+.pub-hero-btns{display:flex;gap:10px;flex-wrap:wrap}
 
-/* ── SECTION TITLES ── */
-.section-title-row{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;margin-top:32px}
-.section-title-row h2{font-family:var(--font-display);font-size:1.4rem;font-weight:700}
-.section-sub{font-size:.82rem;color:var(--muted)}
+/* TIMELINE */
+.timeline-strip{display:flex;align-items:center;background:white;border-radius:14px;padding:16px 24px;margin-bottom:22px;box-shadow:0 1px 5px rgba(0,0,0,.06);overflow-x:auto;gap:0}
+.tl-item{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:100px}
+.tl-dot{width:14px;height:14px;border-radius:50%;background:var(--border);border:2px solid var(--border);flex-shrink:0}
+.tl-dot.done{background:var(--green);border-color:var(--green)}
+.tl-dot.active{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 4px #fef3c7}
+.tl-label{font-size:.75rem;font-weight:600;text-align:center}
+.tl-date{font-size:.67rem;color:var(--muted);text-align:center}
+.tl-item.tl-active .tl-label{color:var(--gold)}
+.tl-item.tl-done .tl-label{color:var(--green)}
+.tl-line{flex:1;height:2px;background:var(--border);min-width:30px}
+.tl-line.done{background:var(--green)}
 
-/* ── EIXOS PROGRESS ── */
-.eixos-progress{display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
-.ep-card{display:flex;align-items:center;gap:14px;background:white;border-radius:12px;padding:14px 18px;box-shadow:0 1px 5px rgba(0,0,0,.06);border-left:5px solid var(--ec,#1a6b2e)}
-.ep-icon{font-size:1.5rem;flex-shrink:0}
-.ep-info{flex:1}
-.ep-tit{font-weight:600;font-size:.9rem}
-.ep-sub{font-size:.78rem;color:var(--muted);margin-bottom:6px}
+/* KPIs PÚBLICO */
+.pub-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.pkpi{background:white;border-radius:12px;padding:16px;text-align:center;border-top:4px solid var(--kc,#1a6b2e);box-shadow:0 1px 5px rgba(0,0,0,.06)}
+.pkpi-val{font-family:var(--fd);font-size:2rem;font-weight:700;color:var(--kc,#1a6b2e);line-height:1}
+.pkpi-label{font-size:.72rem;color:var(--muted);margin-top:4px;font-weight:500}
+
+/* PROGRESSO PÚBLICO */
+.pub-prog-wrap{background:white;border-radius:12px;padding:16px 20px;margin-bottom:24px;box-shadow:0 1px 5px rgba(0,0,0,.06);display:flex;align-items:center;gap:14px}
+.pub-prog-label{font-size:.8rem;font-weight:600;color:var(--text);min-width:180px}
+.pub-prog-track{flex:1;height:10px;background:var(--light);border-radius:5px;overflow:hidden}
+.pub-prog-fill{height:100%;background:linear-gradient(90deg,var(--green),#3aab6b);border-radius:5px;transition:width .6s}
+.pub-prog-pct{font-family:var(--fm);font-size:.75rem;color:var(--muted);min-width:100px;text-align:right}
+
+/* SEÇÕES */
+.section-hd{display:flex;align-items:baseline;gap:10px;margin:28px 0 14px}
+.section-hd h2{font-family:var(--fd);font-size:1.3rem;font-weight:700}
+.section-sub{font-size:.8rem;color:var(--muted)}
+
+/* EIXOS PÚBLICO */
+.eixos-pub{display:flex;flex-direction:column;gap:9px;margin-bottom:8px}
+.ep-row{display:flex;align-items:center;gap:12px;background:white;border-radius:11px;padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:5px solid var(--ec)}
+.ep-icon{font-size:1.3rem;flex-shrink:0}
+.ep-body{flex:1}
+.ep-tit{font-weight:600;font-size:.86rem;margin-bottom:5px}
 .ep-bar-wrap{display:flex;align-items:center;gap:8px}
-.ep-bar{flex:1;height:6px;background:var(--light);border-radius:3px;overflow:hidden}
-.ep-fill{height:100%;border-radius:3px;transition:width .5s}
-.ep-pct{font-size:.75rem;font-family:var(--font-mono);color:var(--muted);min-width:32px}
-.ep-cnt{font-family:var(--font-mono);font-size:.85rem;font-weight:700;flex-shrink:0}
+.ep-bar{flex:1;height:7px;background:var(--light);border-radius:4px;overflow:hidden}
+.ep-fill{height:100%;border-radius:4px;transition:width .5s}
+.ep-pct{font-family:var(--fm);font-size:.72rem;min-width:30px}
+.ep-cnt{font-family:var(--fm);font-size:.85rem;font-weight:700;flex-shrink:0}
 
-/* ── TIPOS ── */
-.tipos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.tipo-card{background:white;border-radius:14px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,.06);border:1.5px solid var(--border);transition:all .2s;position:relative}
-.tipo-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.1)}
-.tipo-num{font-family:var(--font-mono);font-size:2rem;font-weight:700;opacity:.1;position:absolute;top:12px;right:16px}
-.tipo-card h3{font-family:var(--font-display);font-size:1.05rem;font-weight:700;margin-bottom:8px}
-.tipo-card p{font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:10px}
-.tipo-tag{display:inline-block;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:6px}
-.t-adesao{border-top:4px solid var(--green)}.t-adesao .tipo-tag{background:var(--green-l);color:var(--green)}
-.t-decreto{border-top:4px solid var(--blue)}.t-decreto .tipo-tag{background:#dbeafe;color:var(--blue)}
-.t-plano{border-top:4px solid var(--gold)}.t-plano .tipo-tag{background:#fef3c7;color:#854d0e}
-.t-termo{border-top:4px solid var(--purple)}.t-termo .tipo-tag{background:#ede9fe;color:var(--purple)}
+/* INSTRUMENTO PÚBLICO */
+.pub-inst-card{background:white;border-radius:16px;padding:28px;box-shadow:0 1px 8px rgba(0,0,0,.07);display:flex;gap:20px;align-items:flex-start;border:1.5px solid var(--border)}
+.pic-seal{font-size:2.5rem;flex-shrink:0}
+.pic-body{flex:1}
+.pic-natureza{font-family:var(--fd);font-style:italic;font-size:1rem;margin-bottom:8px;color:var(--text)}
+.pic-preamble{font-size:.85rem;line-height:1.8;color:#374151;margin-bottom:12px}
+.pic-bases-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:7px}
+.pic-bases-list{display:flex;flex-wrap:wrap;gap:5px}
+.pic-base-tag{background:var(--light);color:var(--muted);font-size:.72rem;padding:3px 8px;border-radius:5px;font-family:var(--fm)}
 
-/* ── DOCUMENTO JURÍDICO ── */
-.doc-wrapper{margin-bottom:32px}
-.doc-card{background:white;border-radius:20px;padding:48px;box-shadow:0 4px 24px rgba(0,0,0,.08);border:1px solid var(--border)}
-.doc-header{text-align:center;margin-bottom:36px;padding-bottom:28px;border-bottom:2px solid var(--green-l)}
-.doc-seal{font-size:3rem;margin-bottom:12px}
-.doc-title{font-family:var(--font-display);font-size:1.7rem;font-weight:700;line-height:1.25;color:var(--text);margin-bottom:14px}
-.doc-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:12px}
-.doc-meta-item{font-size:.75rem;color:var(--muted);background:var(--light);padding:4px 10px;border-radius:20px}
-.doc-meta-item.status-rascunho{background:#fef3c7;color:#854d0e}
-.doc-meta-item.status-revisao{background:#dbeafe;color:var(--blue)}
-.doc-meta-item.status-final{background:var(--green-l);color:var(--green)}
-.doc-section{margin-bottom:28px}
-.doc-section-label{font-family:var(--font-mono);font-size:.68rem;font-weight:700;letter-spacing:.12em;color:var(--green);text-transform:uppercase;margin-bottom:10px;padding-bottom:4px;border-bottom:2px solid var(--green-l)}
-.doc-nature{font-family:var(--font-display);font-size:1.1rem;font-style:italic;color:var(--text);line-height:1.5}
-.doc-preamble{font-size:.9rem;line-height:1.9;color:#374151;text-align:justify}
-.doc-legal-list{display:flex;flex-direction:column;gap:6px}
-.legal-item{display:flex;gap:10px;align-items:flex-start;padding:7px 10px;background:var(--light);border-radius:8px;font-size:.82rem;color:#374151}
-.legal-num{font-family:var(--font-mono);font-size:.68rem;color:var(--green);font-weight:700;flex-shrink:0;padding-top:1px}
-.doc-clause-intro{font-size:.85rem;color:var(--muted);line-height:1.7;margin-bottom:16px}
-.doc-eixo{margin-bottom:20px;border:1.5px solid #f0f0f0;border-radius:12px;overflow:hidden}
-.doc-eixo-header{background:var(--light);padding:10px 14px;font-weight:600;font-size:.85rem;border-left:5px solid var(--ec,#1a6b2e)}
-.doc-clause{display:flex;gap:12px;padding:12px 14px;border-bottom:1px solid #f5f5f5}
+/* SIGNATÁRIOS PÚBLICO */
+.pub-sigs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:8px}
+.pub-sig-item{background:white;border-radius:11px;padding:13px 15px;border-left:4px solid var(--green);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.psi-nome{font-weight:600;font-size:.87rem;margin-bottom:3px}
+.psi-meta{font-size:.75rem;color:var(--muted)}
+.empty-msg{color:var(--muted);font-style:italic;font-size:.85rem}
+
+/* ADESÃO */
+.adesao-card{background:white;border-radius:16px;padding:28px;box-shadow:0 1px 8px rgba(0,0,0,.07);border:1.5px solid var(--border)}
+.adesao-intro{font-size:.85rem;line-height:1.75;color:var(--muted);margin-bottom:20px;padding:12px 14px;background:var(--gl);border-radius:9px;border-left:3px solid var(--green)}
+.adesao-form{display:flex;flex-direction:column;gap:14px}
+.af-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.af-wide{grid-column:1/-1}
+.af-field{display:flex;flex-direction:column;gap:4px}
+.af-field label{font-size:.72rem;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.06em}
+.af-inp{border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:.85rem;font-family:var(--fb);outline:none;transition:border-color .15s;background:white}
+.af-inp:focus{border-color:var(--green)}
+.af-sel{border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:.85rem;font-family:var(--fb);outline:none;background:white;cursor:pointer}
+
+/* LOGIN CTA */
+.login-cta{background:white;border-radius:16px;padding:28px;margin-top:24px;display:flex;gap:18px;align-items:center;box-shadow:0 1px 8px rgba(0,0,0,.07);border:1.5px dashed var(--border)}
+.lcta-icon{font-size:2rem;flex-shrink:0}
+.lcta-title{font-family:var(--fd);font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.lcta-desc{font-size:.84rem;color:var(--muted);line-height:1.65;margin-bottom:0}
+
+/* DOCUMENTO JURÍDICO */
+.doc-card{background:white;border-radius:18px;padding:44px;box-shadow:0 4px 24px rgba(0,0,0,.08);border:1px solid var(--border);margin-bottom:24px}
+.doc-header{text-align:center;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid var(--gl)}
+.doc-seal-big{font-size:2.8rem;margin-bottom:10px}
+.doc-title{font-family:var(--fd);font-size:1.6rem;font-weight:700;line-height:1.25;margin-bottom:12px}
+.doc-meta-row{display:flex;justify-content:center;flex-wrap:wrap;gap:10px}
+.dmeta{font-size:.73rem;color:var(--muted);background:var(--light);padding:3px 9px;border-radius:20px}
+.dmeta.status-rascunho{background:#fef3c7;color:#854d0e}
+.dmeta.status-final{background:var(--gl);color:var(--green)}
+.doc-sec{margin-bottom:26px}
+.doc-sec-lbl{font-family:var(--fm);font-size:.65rem;font-weight:700;letter-spacing:.12em;color:var(--green);text-transform:uppercase;margin-bottom:9px;padding-bottom:4px;border-bottom:2px solid var(--gl)}
+.doc-nature-txt{font-family:var(--fd);font-size:1.05rem;font-style:italic;line-height:1.5}
+.doc-preamble{font-size:.88rem;line-height:1.9;color:#374151;text-align:justify}
+.legal-list{display:flex;flex-direction:column;gap:5px}
+.legal-item{display:flex;gap:9px;align-items:flex-start;padding:6px 9px;background:var(--light);border-radius:7px;font-size:.81rem;color:#374151}
+.legal-n{font-family:var(--fm);font-size:.66rem;color:var(--green);font-weight:700;flex-shrink:0;padding-top:1px}
+.doc-eixo{margin-bottom:18px;border-radius:11px;overflow:hidden;border:1.5px solid var(--border)}
+.doc-eixo-hd{padding:9px 14px;font-weight:600;font-size:.84rem}
+.doc-clause{display:flex;gap:11px;padding:11px 13px;border-bottom:1px solid #f5f5f5}
 .doc-clause:last-child{border-bottom:none}
-.clause-num{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);flex-shrink:0;padding-top:3px;min-width:28px}
-.clause-body{flex:1}
-.clause-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
-.ctag{font-size:.65rem;font-weight:600;letter-spacing:.06em;padding:2px 7px;border-radius:4px;text-transform:uppercase;color:white}
-.ctag.prior-urgente,.prior-urgente{background:var(--red);color:white}
-.ctag.prior-alta,.prior-alta{background:var(--gold);color:white}
-.ctag.prior-media,.prior-media{background:var(--green);color:white}
-.ctag.st-proposta,.st-proposta{background:#9ca3af;color:white}
-.ctag.st-revisao,.st-revisao{background:var(--gold);color:white}
-.ctag.st-aprovada,.st-aprovada{background:var(--green);color:white}
-.ctag.st-vetada,.st-vetada{background:var(--red);color:white}
-.clause-text{font-size:.88rem;line-height:1.7;color:#374151;text-align:justify}
-.doc-sigs{display:flex;flex-direction:column;gap:8px}
-.doc-sig-item{padding:10px 14px;background:var(--green-l);border-radius:9px;border-left:3px solid var(--green)}
-.sig-org{font-weight:600;font-size:.88rem}
-.sig-meta{font-size:.75rem;color:var(--muted);margin-top:2px}
-.doc-footer{border-top:1px solid var(--border);padding-top:22px;margin-top:28px;text-align:center}
-.doc-foot-text{font-family:var(--font-display);font-size:1rem;color:var(--text);margin-bottom:4px}
-.doc-foot-sub{font-size:.78rem;color:var(--muted);margin-bottom:16px}
-.btn-print{background:var(--green);color:white;border:none;border-radius:10px;padding:10px 22px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:var(--font-body)}
+.dc-num{font-family:var(--fm);font-size:.7rem;color:var(--muted);flex-shrink:0;padding-top:4px;min-width:26px}
+.dc-body{flex:1}
+.dc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px}
+.ctag{font-size:.63rem;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:4px;text-transform:uppercase;color:white}
+.st-proposta{background:#9ca3af}.st-revisao{background:var(--gold)}.st-aprovada{background:var(--green)}.st-vetada{background:var(--red)}
+.dc-texto{font-size:.86rem;line-height:1.75;color:#374151;text-align:justify}
+.doc-sig{padding:8px 12px;background:var(--gl);border-radius:8px;margin-bottom:6px;border-left:3px solid var(--green);font-size:.85rem}
+.doc-sig-meta{font-size:.75rem;color:var(--muted);margin-left:8px}
+.doc-footer{border-top:1px solid var(--border);padding-top:20px;margin-top:24px;text-align:center;font-size:.82rem;color:var(--muted)}
+.btn-print{background:var(--green);color:white;border:none;border-radius:9px;padding:9px 20px;font-size:.83rem;font-weight:600;cursor:pointer;font-family:var(--fb);margin-top:12px}
 
-/* ── EIXOS / CLÁUSULAS ── */
-.eixo-bloco{background:white;border-radius:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.06);overflow:hidden}
-.eixo-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;transition:background .15s;border-left:6px solid var(--ec)}
-.eixo-header:hover{background:var(--light)}
-.eh-left{display:flex;align-items:center;gap:12px}
-.eh-icon{font-size:1.4rem}
-.eh-titulo{font-weight:700;font-size:.95rem}
-.eh-sub{font-size:.78rem;color:var(--muted);margin-top:2px}
-.eh-right{display:flex;align-items:center;gap:10px}
-.tag-urg{background:#fee2e2;color:var(--red);font-size:.7rem;font-weight:600;padding:3px 8px;border-radius:20px}
-.eh-cnt{font-family:var(--font-mono);font-size:.85rem;font-weight:700}
-.eh-tog{font-size:.85rem;color:var(--muted)}
-.eixo-corpo{padding:0 0 12px}
-.clausula-card{margin:8px 12px;background:#fafafa;border-radius:12px;border:1.5px solid var(--border);padding:14px;transition:all .2s}
-.clausula-card:hover{border-color:#d1d5db;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.clausula-card.aprovada{border-color:#86efac;background:#f0fdf4}
-.clausula-card.vetada{border-color:#fca5a5;background:#fef2f2;opacity:.75}
-.cc-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-.cc-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-family:var(--font-mono);font-size:.7rem;font-weight:700;flex-shrink:0}
+/* CLÁUSULAS */
+.eixo-bloco{background:white;border-radius:14px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,.06);overflow:hidden}
+.eixo-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;transition:background .15s;background:white}
+.eixo-hd:hover{background:var(--light)}
+.eh-l{display:flex;align-items:center;gap:10px}
+.eh-tit{font-weight:700;font-size:.92rem}
+.eh-sub{font-size:.75rem;color:var(--muted);margin-top:1px}
+.eh-r{display:flex;align-items:center;gap:8px}
+.tag-urg{background:#fee2e2;color:var(--red);font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:20px}
+.eh-cnt{font-family:var(--fm);font-size:.82rem;font-weight:700}
+.eixo-corpo{padding:0 0 10px}
+.cc{margin:7px 10px;background:#fafafa;border-radius:11px;border:1.5px solid var(--border);padding:12px}
+.cc:hover{border-color:#d1d5db}
+.cc.aprovada{border-color:#86efac;background:#f0fdf4}
+.cc.vetada{border-color:#fca5a5;background:#fef2f2;opacity:.7}
+.cc-hd{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:7px}
+.cc-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-family:var(--fm);font-size:.66rem;font-weight:700;flex-shrink:0}
 .cc-tags{display:flex;gap:4px;flex:1;flex-wrap:wrap}
-.cc-status .st-sel{border:1.5px solid var(--border);border-radius:7px;padding:4px 6px;font-size:.75rem;font-family:var(--font-body);background:white;cursor:pointer;outline:none}
-.st-badge{font-size:.72rem;font-weight:600;padding:3px 8px;border-radius:6px}
-.cc-actions{display:flex;gap:4px;margin-left:auto}
-.cc-btn{border:none;background:none;cursor:pointer;font-size:.95rem;padding:3px 5px;border-radius:6px;transition:background .15s}
-.cc-btn:hover{background:var(--light)}
-.cc-btn.del:hover{background:#fee2e2}
-.cc-texto{font-size:.88rem;line-height:1.75;color:#374151;text-align:justify}
-.cc-props-badge{margin-top:8px;font-size:.75rem;color:var(--gold);font-weight:500}
-.add-clausula-row{padding:6px 12px}
-.btn-add-clausula{background:var(--green-l);color:var(--green);border:1.5px dashed var(--green);border-radius:10px;padding:9px 16px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:var(--font-body);width:100%;transition:all .15s}
-.btn-add-clausula:hover{background:var(--green);color:white}
+.cc-st .st-sel{border:1.5px solid var(--border);border-radius:6px;padding:3px 6px;font-size:.73rem;font-family:var(--fb);background:white;cursor:pointer;outline:none}
+.st-badge{font-size:.7rem;font-weight:600;padding:2px 7px;border-radius:5px;color:white}
+.cc-btns{display:flex;gap:3px;margin-left:auto}
+.ic-btn{border:none;background:none;cursor:pointer;font-size:.92rem;padding:3px 5px;border-radius:5px;transition:background .15s}
+.ic-btn:hover{background:var(--light)}
+.ic-btn.prop-btn{color:var(--blue)}
+.cc-texto{font-size:.86rem;line-height:1.75;color:#374151}
+.add-c-row{padding:4px 10px}
+.btn-add-c{width:100%;background:var(--gl);color:var(--green);border:1.5px dashed var(--green);border-radius:9px;padding:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:var(--fb);transition:all .15s}
+.btn-add-c:hover{background:var(--green);color:white}
 
-/* ── SIGNATÁRIOS ── */
-.sig-section-title{font-size:.85rem;font-weight:600;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.sig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px}
-.sig-card{background:white;border-radius:14px;padding:16px;border-top:4px solid var(--sc,#1a6b2e);box-shadow:0 1px 5px rgba(0,0,0,.06)}
-.sc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px}
-.sc-nome{font-weight:600;font-size:.88rem;line-height:1.4}
-.sc-status{font-size:.65rem;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:4px;color:white;text-transform:uppercase;flex-shrink:0}
-.sc-tipo{font-size:.78rem;color:var(--muted);margin-bottom:4px}
-.sc-meta{font-size:.75rem;color:var(--muted)}
-.sc-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.sc-btn{border:1.5px solid var(--border);background:white;color:var(--muted);border-radius:7px;padding:4px 10px;font-size:.75rem;cursor:pointer;font-family:var(--font-body);transition:all .15s}
-.sc-btn:hover{background:var(--light);color:var(--text)}
+/* SIGNATÁRIOS PRIVADO */
+.sig-sec-tit{font-size:.83rem;font-weight:700;margin:18px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.sig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;margin-bottom:12px}
+.sig-card{background:white;border-radius:13px;padding:14px;box-shadow:0 1px 5px rgba(0,0,0,.06)}
+.sc-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:7px;margin-bottom:4px}
+.sc-nome{font-weight:600;font-size:.86rem;line-height:1.4}
+.sc-st{font-size:.63rem;font-weight:700;padding:2px 7px;border-radius:3px;color:white;text-transform:uppercase;flex-shrink:0}
+.sc-tipo{font-size:.76rem;color:var(--muted);margin-bottom:3px}
+.sc-meta{font-size:.73rem;color:var(--muted)}
+.sc-btns{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap}
+.sc-btn{border:1.5px solid var(--border);background:white;color:var(--muted);border-radius:6px;padding:3px 9px;font-size:.73rem;cursor:pointer;font-family:var(--fb);transition:all .15s}
 .sc-btn.green{border-color:var(--green);color:var(--green)}.sc-btn.green:hover{background:var(--green);color:white}
 .sc-btn.red{border-color:var(--red);color:var(--red)}.sc-btn.red:hover{background:#fee2e2}
-.sig-tipos-ref{background:white;border-radius:16px;padding:20px 24px;margin-top:24px;border:1.5px solid var(--border)}
-.sig-ref-title{font-weight:600;font-size:.85rem;margin-bottom:12px}
-.sig-ref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
-.sig-ref-item{font-size:.8rem;color:var(--muted);padding:7px 10px;background:var(--light);border-radius:8px;line-height:1.4}
-.empty-state{text-align:center;padding:32px;color:var(--muted);font-style:italic;font-size:.9rem;background:var(--light);border-radius:12px}
+.empty-state{text-align:center;padding:28px;color:var(--muted);font-style:italic;font-size:.88rem;background:var(--light);border-radius:11px}
 
-/* ── PROPOSTAS ── */
-.prop-card{background:white;border-radius:14px;padding:16px 20px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,.06);border:1.5px solid var(--border)}
+/* PROPOSTAS */
+.prop-card{background:white;border-radius:13px;padding:14px 18px;margin-bottom:9px;box-shadow:0 1px 5px rgba(0,0,0,.06);border:1.5px solid var(--border)}
 .prop-card.aberta{border-left:5px solid var(--gold)}
 .prop-card.aceita{border-left:5px solid var(--green);opacity:.8}
 .prop-card.rejeitada{border-left:5px solid #9ca3af;opacity:.7}
-.prop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.prop-meta{display:flex;align-items:center;gap:10px}
-.prop-user{font-weight:600;font-size:.82rem;color:var(--green)}
-.prop-ts{font-size:.72rem;color:var(--muted)}
-.prop-ref{font-size:.72rem;background:var(--light);padding:2px 7px;border-radius:4px;color:var(--muted)}
-.prop-status-tag{font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.06em;text-transform:uppercase}
-.prop-status-tag.aberta{background:#fef3c7;color:#854d0e}
-.prop-status-tag.aceita{background:var(--green-l);color:var(--green)}
-.prop-status-tag.rejeitada{background:#f3f4f6;color:#6b7280}
-.prop-original{font-size:.78rem;color:var(--muted);margin-bottom:6px;padding:7px 10px;background:var(--light);border-radius:7px;line-height:1.5}
-.prop-texto{font-size:.88rem;line-height:1.7;color:var(--text);margin-bottom:10px}
-.prop-actions{display:flex;gap:8px}
-.prop-btn{border:none;border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:all .15s}
-.prop-btn.accept{background:var(--green);color:white}.prop-btn.accept:hover{background:#145524}
-.prop-btn.reject{background:#fee2e2;color:var(--red)}.prop-btn.reject:hover{background:var(--red);color:white}
+.prop-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.prop-user{font-weight:700;font-size:.8rem;color:var(--green);margin-right:8px}
+.prop-ts{font-size:.7rem;color:var(--muted);margin-right:8px}
+.prop-ref{font-size:.7rem;background:var(--light);padding:2px 6px;border-radius:4px;color:var(--muted)}
+.prop-st{font-size:.66rem;font-weight:700;padding:2px 7px;border-radius:5px;letter-spacing:.05em;text-transform:uppercase}
+.prop-st-aberta{background:#fef3c7;color:#854d0e}
+.prop-st-aceita{background:var(--gl);color:var(--green)}
+.prop-st-rejeitada{background:#f3f4f6;color:#6b7280}
+.prop-orig{font-size:.76rem;color:var(--muted);padding:6px 9px;background:var(--light);border-radius:6px;margin-bottom:6px;line-height:1.5}
+.prop-txt{font-size:.86rem;line-height:1.7;color:var(--text);margin-bottom:9px}
+.prop-btns{display:flex;gap:7px}
+.prop-btn-ok{background:var(--green);color:white;border:none;border-radius:7px;padding:6px 13px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:var(--fb)}
+.prop-btn-no{background:#fee2e2;color:var(--red);border:none;border-radius:7px;padding:6px 13px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:var(--fb)}
 
-/* ── ADMIN ── */
-.admin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-.admin-section{background:white;border-radius:16px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
-.admin-sec-title{font-family:var(--font-mono);font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--green);text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--green-l)}
-.admin-stats{font-size:.82rem;color:var(--muted);margin-bottom:10px}
-.admin-btn{display:block;width:100%;background:var(--light);border:1.5px solid var(--border);color:var(--text);border-radius:9px;padding:9px 12px;font-size:.8rem;font-weight:500;cursor:pointer;font-family:var(--font-body);text-align:left;margin-bottom:6px;transition:all .15s}
-.admin-btn:hover{background:#e5e7eb;border-color:#d1d5db}
+/* ADMIN */
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.admin-sec{background:white;border-radius:14px;padding:18px;box-shadow:0 1px 5px rgba(0,0,0,.06)}
+.admin-sec-tit{font-family:var(--fm);font-size:.67rem;font-weight:700;letter-spacing:.1em;color:var(--green);text-transform:uppercase;margin-bottom:11px;padding-bottom:7px;border-bottom:1px solid var(--gl)}
+.admin-btn{display:block;width:100%;background:var(--light);border:1.5px solid var(--border);color:var(--text);border-radius:8px;padding:8px 11px;font-size:.79rem;font-weight:500;cursor:pointer;font-family:var(--fb);text-align:left;margin-bottom:5px;transition:all .15s}
+.admin-btn:hover{background:#e5e7eb}
 .admin-btn.warn{background:#fef3c7;border-color:#fde68a;color:#854d0e}
-.admin-btn.warn:hover{background:#fde68a}
 
-/* ── LOG ── */
-.log-item{background:white;border-radius:10px;padding:11px 14px;margin-bottom:7px;box-shadow:0 1px 4px rgba(0,0,0,.05);border-left:3px solid var(--green)}
-.log-meta{display:flex;gap:8px;align-items:center;margin-bottom:3px}
-.log-user{font-size:.72rem;font-weight:700;color:var(--green)}
-.log-ts{font-size:.67rem;color:var(--muted)}
-.log-acao{font-size:.84rem;font-weight:500;color:var(--text)}
-.log-det{font-size:.76rem;color:var(--muted);margin-top:2px;padding-left:8px;border-left:2px solid var(--border);line-height:1.5}
+/* LOG */
+.log-item{background:white;border-radius:9px;padding:10px 13px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,.05);border-left:3px solid var(--green)}
+.log-meta{display:flex;gap:8px;align-items:center;margin-bottom:2px}
+.log-u{font-size:.7rem;font-weight:700;color:var(--green)}
+.log-ts{font-size:.65rem;color:var(--muted)}
+.log-a{font-size:.82rem;font-weight:500}
+.log-d{font-size:.74rem;color:var(--muted);margin-top:2px;padding-left:7px;border-left:2px solid var(--border);line-height:1.5}
 
-/* ── TOAST ── */
-.toast{position:fixed;bottom:22px;right:22px;background:#111827;color:white;padding:10px 18px;border-radius:10px;font-size:.82rem;font-weight:500;opacity:0;transform:translateY(8px);transition:all .25s;z-index:999;pointer-events:none;font-family:var(--font-body)}
+/* SEM LOGIN */
+.sem-login{text-align:center;padding:48px 20px;background:white;border-radius:16px;box-shadow:0 1px 8px rgba(0,0,0,.07)}
+.sem-login h3{font-family:var(--fd);font-size:1.3rem;margin-bottom:8px}
+.sem-login p{color:var(--muted);font-size:.88rem}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:#111827;color:white;padding:9px 16px;border-radius:9px;font-size:.8rem;font-weight:500;opacity:0;transform:translateY(8px);transition:all .25s;z-index:999;pointer-events:none;font-family:var(--fb)}
 .toast.show{opacity:1;transform:translateY(0)}
-.toast.warn{background:#854d0e}
-.toast.err{background:#991b1b}
+.toast.warn{background:#854d0e}.toast.err{background:#991b1b}
 
-/* ── PRINT ── */
+/* PRINT */
 @media print{
-  .top-nav,.btn-print,.cc-actions,.sc-actions,.prop-actions,.btn-primary,.btn-outline,.btn-edit-inst,.admin-btn{display:none!important}
+  .top-nav,.btn-print,.cc-btns,.sc-btns,.prop-btns,.admin-btn,.btn-primary,.btn-outline,.btn-sm-edit,.login-cta,.sem-login,.adesao-card{display:none!important}
   .main-content{padding:0}
-  .doc-card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid}
+  .doc-card{box-shadow:none;border:1px solid #ccc}
 }
 
-@media(max-width:700px){
-  .top-nav{padding:0 12px;gap:8px}
-  .nav-links{display:none}
-  .main-content{padding:16px 12px 60px}
-  .home-hero{padding:28px 20px}
-  .doc-card{padding:24px 16px}
-  .kpi-grid{grid-template-columns:repeat(3,1fr)}
-  .tipos-grid,.sig-grid,.admin-grid{grid-template-columns:1fr}
+/* MOBILE */
+@media(max-width:680px){
+  .top-nav{padding:0 12px}
+  .nav-links .nav-link{padding:5px 8px;font-size:.73rem}
+  .main-content{padding:14px 12px 60px}
+  .pub-hero{padding:26px 18px}
+  .pub-kpis{grid-template-columns:repeat(2,1fr)}
+  .doc-card{padding:22px 14px}
+  .af-row{grid-template-columns:1fr}
+  .pub-prog-wrap{flex-direction:column;align-items:flex-start;gap:8px}
+  .pub-inst-card{flex-direction:column}
+  .login-cta{flex-direction:column;text-align:center}
+  .timeline-strip{padding:12px 14px}
 }
 </style>
-</head>
-<body>
-<div id="app"></div>
-<div class="toast" id="toast"></div>
 </body>
 </html>
